@@ -114,10 +114,6 @@ function mailhandler_node_process_message($header, $origbody, $mailbox) {
   // switch back to original user
   mailhandler_switch_user();
 
-  // Put something in the results array for the counter in the batch finished callback
-  $context['results'][] = $mailbox['mail'];
-
-  mailhandler_switch_user();
 }
 
 /**

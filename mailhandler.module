@@ -1,18 +1,6 @@
 <?php
 // $Id: mailhandler.module,v 1.96.2.3.2.2 2010/03/18 00:49:12 developmentseed Exp $
 
-/**
- * Implementation of hook_cron(). Process msgs from all enabled mailboxes.
- */
-function mailhandler_cron() {
-  // Include mailhandler retrieval functions
-  module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-  // Retrieve messages
-  $result = db_query('SELECT * FROM {mailhandler} WHERE enabled = 1 ORDER BY mail');
-  while ($mailbox = db_fetch_array($result)) {
-    mailhandler_node_process_mailbox($mailbox, variable_get('mailhandler_max_retrieval', 0), array());
-  }
-}
 
 /**
  * Implementation of hook_perm().
@@ -41,14 +29,6 @@ function mailhandler_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -1,
   );
-  $items['admin/content/mailhandler/list'] = array(
-    'title' => t('List'),
-    'description' => t('Manage mailboxes and retrieve messages.'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'access arguments' => array('administer mailhandler'),
-    'weight' => -10,
-  );
-
   $items['admin/content/mailhandler/add'] = array(
     'title' => t('Add mailbox'),
     'page callback' => 'drupal_get_form',
@@ -57,7 +37,6 @@ function mailhandler_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'mailhandler.admin.inc',
   );
-
   $items['admin/content/mailhandler/clone/%'] = array(
     'title' => t('Add mailbox'),
     'page callback' => 'drupal_get_form',
@@ -66,7 +45,6 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
   );
-
   $items['admin/content/mailhandler/retrieve/%mailhandler_mailbox'] = array(
     'title' => t('Retrieve'),
     'page callback' => 'mailhandler_node_process_mailbox',
@@ -76,16 +54,6 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.retrieve.inc',
   );
-
-#  $items['admin/content/mailhandler/edit/%'] = array(
-#    'title' => t('Edit mailbox'),
-#    'page callback' => 'drupal_get_form',
-#    'page arguments' => array('mailhandler_add_edit_mailbox', 4),
-#    'access arguments' => array('administer mailhandler'),
-#    'type' => MENU_CALLBACK,
-#    'file' => 'mailhandler.admin.inc',
-#  );
-
   $items['admin/content/mailhandler/delete/%'] = array(
     'title' => t('Delete mailbox'),
     'page callback' => 'drupal_get_form',
@@ -122,66 +90,7 @@ function mailhandler_menu() {
  * Implementation of hook_help().
  */
 function mailhandler_help($path = 'admin/help#mailhandler', $arg) {
-  $output = '';
-  $link->add = l(t('Add mailbox'), 'admin/content/mailhandler/add');
-
-  // Gather examples of useful commands, and build a definition list with them:
-  $commands[] = array('command' => 'taxonomy: [term1, term2]',
-                      'description' => t('Use this to add the terms <em>term1</em> and <em>term2</em> to the node.<br />
-                      Both of the terms should already exist. In case they do not exist already, they will be quietly ommitted'));
-  $commands[] = array('command' => 'taxonomy[v]: [term1, term2]',
-                      'description' => t('Similar to the above: adds the terms <em>term1</em> and <em>term2</em> to the node, but uses the vocabulary with the vocabulary id <em>v</em>. For example <em>taxonomy[3]</em> will chose only terms from the vocabulary which id is 3.<br />
-                      In case some of the terms do not exist already, the behavior will depend on whether the vocabulary is a free tagging vocabulary or not. If it is a free tagging vocabulary, the term will be added, otherwise, it will be quietly ommitted'));
-
-  $commands_list = '<dl>';
-  foreach ($commands as $command) {
-    $commands_list .= '<dt>'. $command['command'] .'</dt>';
-    $commands_list .= '<dl>'. $command['description'] .'</dl>';
-  }
-  $commands_list .= '</dl>';
-
-  switch ($path) {
-    case 'admin/help#mailhandler':
-      $output = '<p>'. t('The mailhandler module allows registered users to create or edit nodes and comments via e-mail. Users may post taxonomy terms, teasers, and other post attributes using the mail commands capability.  This module is useful because e-mail is the preferred method of communication by community members.') .'</p>';
-      $output .= '<p>'. t('The mailhandler module requires the use of a custom mailbox.  Administrators can add mailboxes that should be customized to meet the needs of a mailing list. This mailbox will then be checked on every cron job. Administrators may also initiate a manual retrieval of messages.') .'</p>';
-      $output .= '<p>'. t('This is particularly useful when you want multiple sets of default commands. For example , if you want to authenticate based on a non-standard mail header like Sender: which is useful for accepting submissions from a listserv. Authentication is usually based on the From: e-mail address.  Administrators can edit the individual mailboxes when they administer mailhandler.') .'</p>';
-      $output .= t('<p>You can</p>
-<ul>
-<li><a href="@run-cron">run cron</a> to retrieve messages from all cron enabled mailboxes.</li>
-<li>list mailboxes at <a href="@admin-mailhandler">Administer &gt;&gt; Content management &gt;&gt; Mailhandler</a>.</li>
-<li>add a mailbox at <a href="@admin-mailhandler-add">Administer &gt;&gt; Content management &gt;&gt; Mailhandler &gt;&gt; Add  mailbox.</a></li>
-<li>set default commands, (password, type, taxonomy, promote, status), for how to work with incoming mail at <a href="%admin-mailhandler">Administer &gt;&gt; Content management &gt;&gt; Mailhandler</a> and select <strong>edit</strong> for the email address being handled.  Set commands in the default command field.</li>
-<li>post email, such as from a mailing list, to a forum by adding the term id (number found in the URL) to the default commands using <strong>tid: #</strong>.</li>
-<li>alter mailhandler settings (default content type and cron threshold) at <a href="@admin-mailhandler-settings">Administer &gt;&gt; Site configuration &gt;&gt; Mailhandler</a>.</li>
-</ul>',
-   array(
-     '@run-cron' => url('admin/logs/status/run-cron'),
-     '@admin-mailhandler-add' => url('admin/content/mailhandler/add'),
-     '@admin-mailhandler' => url('admin/content/mailhandler'),
-     '@admin-mailhandler-settings' => url('admin/settings/mailhandler'),
-   ));
-      $output .= '<h3 id="commands">'. t('Useful Commands') .'</h3>';
-      $output .= $commands_list;
-      $output .= '<p>'. t('For more information please read the configuration and customization handbook <a href="@mailhandler">Mailhandler page</a>.', array('@mailhandler' => url('http://www.drupal.org/handbook/modules/mailhandler', array('absolute' => TRUE)))) .'</p>'; 
-      return $output;
-    case 'admin/content/mailhandler':
-      return t('The mailhandler module allows registered users to create or edit nodes and comments via email. Authentication is usually based on the From: email address. There is also an email filter that can be used to prettify incoming email. Users may post taxonomy terms, teasers, and other node parameters using the Command capability.');
-    case 'admin/content/mailhandler/add':
-      return t('Add a mailbox whose mail you wish to import into Drupal. Can be IMAP, POP3, or local folder.');
-    case 'admin/content/mailhandler/edit/%':
-      return t('Edit the mailbox whose mail you wish to import into Drupal. Can be IMAP, POP3, or local folder.');
-    case 'admin/settings/mailhandler':
-      return t('The mailhandler module allows registered users to create or edit nodes and comments via e-mail.');
-  }
-}
-
-
-/**
- * Implementation of hook_init to add mailhandler.css
- */
-function mailhandler_init() {
-  drupal_add_css(drupal_get_path('module', 'mailhandler') .'/mailhandler.css');
-  return;
+  ; // TODO: Update help text.
 }
 
 /**
@@ -201,35 +110,6 @@ function mailhandler_mail($key, &$message, $params) {
     $message['body'][$key] = decode_entities(strip_tags($error));
   }
   $message['body'][] = t("You sent:\n\nFrom: !from\nSubject: !subject\nBody:\n!body", $variables);
-}
-
-/**
- * Implementation of hook_mailhandler_authenticate_info()
- */
-function mailhandler_mailhandler_authenticate_info() {
-  $info = array(
-    'mailhandler_default' => array(
-      'title' => 'Mailhandler Default',
-      'description' => 'Checks whether the sender matches a valid user in the database',
-      'callback' => 'mailhandler_authenticate_default',
-      'module' => 'mailhandler',
-      'extension' => NULL, // as in $type in module_load_include
-      'basename' => NULL, // as in $name in module_load_include
-    )
-  );
-  if (module_exists('tokenauth')) {
-    $info += array(
-      'mailhandler_tokenauth' => array(
-        'title' => 'Mailhandler Tokenauth',
-        'description' => 'Authenticate messages based on users token from Tokenauth module',
-        'callback' => 'mailhandler_authenticate_tokenauth',
-        'module' => 'mailhandler',
-        'extension' => NULL,
-        'basename' => NULL,
-      ),
-    );
-  }
-  return $info;
 }
 
 /**
@@ -416,7 +296,17 @@ function mailhandler_ctools_plugin_api($module, $api) {
       'path' => drupal_get_path('module', 'mailhandler'),
     );
   }
-  elseif ($module == 'mailhandler' && $api == 'plugins') {
+  elseif ($module == 'mailhandler' && $api == 'mailbox') {
+    return array(
+      'version' => 1
+    );
+  }
+  elseif ($module == 'mailhandler' && $api == 'authenticate') {
+    return array(
+      'version' => 1
+    );
+  }
+  elseif ($module == 'mailhandler' && $api == 'commands') {
     return array(
       'version' => 1
     );
@@ -478,12 +368,9 @@ function mailhandler_operations_view_options($mailbox) {
   return $links;
 }
 
-// TODO - call this with $type ... 'names'/'all'/NULL
-//   $type of NULL will initialize a new mailbox
-//   which can be used on the form for making a new mailbox
 
-function mailhandler_mailboxes_load($name = '') {
-  $args = array();
+function mailhandler_mailboxes_load($name = '', $new = FALSE) {
+  $args = array(); $type = '';
   !$name ? $type = 'all' : $type = 'names'; 
   if ($type == 'names') {
     $args = array('name' => $name);
@@ -495,17 +382,24 @@ function mailhandler_mailboxes_load($name = '') {
     if ($type == 'names' && count($args['name']) == 1) {
       return array_shift($mailboxes);
     }
-    else {
+    elseif (!empty($mailboxes) && !$new) {
       return $mailboxes;
+    }
+    elseif ($new) {
+      // Build a new mailbox
+      if ($class = mailhandler_plugin_load_class('MailhandlerMailbox', 'mailbox', 'handler')) {
+        return $class;
+      } // TODO: handle case if not loaded.
     }
   }
 }
+
 
 function mailhandler_operations_title($op = '', $mailbox = '') {
   //$map = array_shift($map); // TODO: is this always going to be an object, and not an array?
   switch($op) {
     case 'edit':
-      return t('Edit mapping !mapping', array('!mailbox' => $mailbox->name));
+      return t('Edit mailbox !mailbox', array('!mailbox' => $mailbox->mail));
     default:
       return;
       break;
@@ -536,9 +430,9 @@ function mailhandler_operations_view() {
 
 
 /**
- * Implementation of hook_mailhandler_plugins().
+ * Implementation of hook_mailhandler_mailbox().
  */
-function mailhandler_mailhandler_plugins() {
+function mailhandler_mailhandler_mailbox() {
   $plugins = array();
   $plugins['MailhandlerMailbox'] = array(
     'handler' => array(
@@ -550,3 +444,84 @@ function mailhandler_mailhandler_plugins() {
   );
   return $plugins;
 }
+
+// TODO: make abstract classes for these plugin types
+function mailhandler_mailhandler_authenticate() {
+  $plugins = array();
+  $plugins['MailhandlerAuthenticateDefault'] = array(
+    'name' => 'Mailhandler default authentication',
+    'description' => 'Authenticate messages based on "from" email address',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
+      'file' => 'MailhandlerAuthenticateDefault.inc',
+      'class' => 'MailhandlerAuthenticateDefault',
+      # 'parent' => '',
+    ),
+  );
+  return $plugins;
+}
+
+function mailhandler_mailhandler_commands() {
+  $plugins = array();
+  $plugins['MailhandlerCommandsDefault'] = array(
+    'name' => 'Mailhandler default commands',
+    'description' => 'Default Mailhandler command parser and processor',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
+      'file' => 'MailhandlerCommandsDefault.inc',
+      'class' => 'MailhandlerCommandsDefault',
+      # 'parent' => '',
+    ),
+  );
+  return $plugins;
+}
+
+/**
+* Implementation of hook_feeds_plugins().
+*/
+function mailhandler_feeds_plugins() {
+  $info = array();
+  $info['MailhandlerParser'] = array(
+    'name' => 'Mailhandler parser',
+    'description' => 'Parses an IMAP stream.',
+    'handler' => array(
+      'parent' => 'FeedsParser', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'MailhandlerParser',
+      'file' => 'MailhandlerParser.inc',
+      'path' => drupal_get_path('module', 'mailhandler') . '/plugins',
+    ),
+  );
+  $info['MailhandlerFetcher'] = array(
+    'name' => 'Mailhandler fetcher',
+    'description' => 'Connects to an IMAP/POP mailbox.',
+    'handler' => array(
+      'parent' => 'FeedsFetcher', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'MailhandlerFetcher',
+      'file' => 'MailhandlerFetcher.inc',
+      'path' => drupal_get_path('module', 'mailhandler') . '/plugins',
+    ),
+  );
+  $info['MailhandlerNodeProcessor'] = array(
+    'name' => 'Mailhandler Node Processor',
+    'description' => 'Create nodes from an IMAP/POP result set.',
+    'handler' => array(
+      'parent' => 'FeedsProcessor', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'MailhandlerNodeProcessor',
+      'file' => 'MailhandlerNodeProcessor.inc',
+      'path' => drupal_get_path('module', 'mailhandler') . '/plugins',
+    ),
+  );
+  return $info;
+}
+
+/*
+ * Wrapper to load any class type
+ */
+function mailhandler_plugin_load_class($plugin, $type, $id, $args = NULL) {
+  ctools_include('plugins');
+  if ($class = ctools_plugin_load_class('mailhandler', $type, $plugin, 'handler')) {
+    return new $class($args);
+  }
+  // TODO: handle case where plugin is unable to load.
+}
+

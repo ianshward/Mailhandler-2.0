@@ -5,30 +5,8 @@
  */
 function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
   module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-  // TODO load an empty MailhandlerMailbox object  
-  
-  /*$edit = $mailbox ? mailhandler_mailboxes_load($mailbox) : array(
-    'mail' => '',
-    'mailto' => '',
-    'imap' => 0,
-    'domain' => '',
-    'port' => '',
-    'name' => '',
-    'pass' => '',
-    'extraimap' => '',
-    'mime' => 'TEXT/HTML,TEXT/PLAIN',
-    'security' => 0,
-    'replies' => 1,
-    'fromheader' => '',
-    'commands' => '',
-    'sigseparator' => '',
-    'delete_after_read' => 1,
-    'enabled' => 1,
-    'format' => FILTER_FORMAT_DEFAULT,
-    'authentication',
-  );*/
 
-  $edit = mailhandler_mailboxes_load($mailbox);
+  $edit = $mailbox ? mailhandler_mailboxes_load($mailbox) : mailhandler_mailboxes_load('', TRUE);
   
   if ($clone) {
     unset($mid);
@@ -375,7 +353,7 @@ function mailhandler_list_mailboxes() {
 
 }
 
-
+// TODO: implement these settings at the per-config level.
 /**
  * Return the settings page for mailhandler
  */

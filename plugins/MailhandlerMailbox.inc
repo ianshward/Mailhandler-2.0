@@ -25,7 +25,7 @@ class MailhandlerMailbox {
    */
   function __construct() {
     $this->imap = 0;
-    $this->mime = 'TEXT/HTML,TEXT/PLAIN',
+    $this->mime = 'TEXT/HTML,TEXT/PLAIN';
     $this->security = 0;
     $this->replies = 1;
     $this->delete_after_read = 1;
