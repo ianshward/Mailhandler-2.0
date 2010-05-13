@@ -22,7 +22,6 @@ class MailhandlerParser extends FeedsParser {
         foreach ($messages as &$message) {
           $this->parseExtensions($message);
         }
-        dwd('messages', $messages);
         $batch->setItems($messages);
       }
     }

@@ -115,12 +115,6 @@ function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
     '#default_value' => $edit->fromheader,
     '#description' => t('Use this e-mail header to determine the author of the resulting node. Admins usually leave this field blank (thus using the <strong>From</strong> header), but <strong>Sender</strong> is also useful when working with listservs.'));
 
-  $form['commands'] = array(
-    '#type' => 'textarea', 
-    '#title' => t('Default commands'), 
-    '#default_value' => $edit->commands,
-    '#description' => t('A set of commands which are added to each message. One command per line. See <a href="@link">Commands</a>.', array('@link' => url('admin/help/mailhandler/#commands'))));
-
   $form['sigseparator'] = array(
     '#type' => 'textfield', 
     '#title' => t('Signature separator'), 
@@ -133,35 +127,9 @@ function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
     '#default_value' => $edit->delete_after_read, 
     '#description' => t('Uncheck this box to leave read messages in the mailbox. They will not be processed again unless they become marked as unread.  If you selected "POP3" as your mailbox type, you must check this box.'));
 
-  $form['enabled'] = array(
-    '#type' => 'radios', 
-    '#title' => t('Cron processing'), 
-    '#options' => array(t('Disabled'), t('Enabled')), 
-    '#default_value' => $edit->enabled, 
-    '#description' => t('Select disable to temporarily stop cron processing for this mailbox.'));
-
   // Allow administrators to select the format of saved nodes/comments
   $form['format'] = filter_form($edit->format);
   
-  $options = array();
-  $descriptions = '';
-  $options[0] = t('Choose method');
-  $methods = mailhandler_mailhandler_authenticate('info');
-  foreach ($methods as $method) {
-    foreach ($method as $name => $info) {
-      $options[$name] = t($info['title']);
-      // TODO: theme function
-      $descriptions .= t($info['title']) .": ". t($info['description']) . "\n";
-    }
-  }
-  $form['authentication'] = array(
-    '#type' => 'select',
-    '#title' => t('Message authentication method'),
-    '#options' => $options,
-    '#description' => t('Following is the name and description of each available authentication method') . "\n\n" . $descriptions,
-    '#default_value' => $edit->authentication,
-  );
-
   $form['actions'] = array('#prefix' => '<p><div class="confirmation container-inline">', '#suffix' => '</div></p>');
 
   $form['mid'] = array(
@@ -247,16 +215,14 @@ function mailhandler_add_edit_mailbox_validate($form, &$form_state) {
  * Save a mailbox to the database - determine whether adding or editing by checking for a mailbox id (mid)
  */
 function mailhandler_add_edit_mailbox_submit($form, &$form_state) {
-// TODO: try to rewrite these monsters wth drupal_write_record();
   if ($form_state['values']['mid']) {
-    db_query("UPDATE {mailhandler} SET mail = '%s', mailto = '%s', domain = '%s', port = %d, folder = '%s', name = '%s', pass = '%s', extraimap = '%s', mime = '%s', imap = '%s', security = %d, replies = %d, fromheader = '%s', commands = '%s', sigseparator = '%s', enabled = %d, delete_after_read = %d, format = %d, authentication = '%s' WHERE mid = %d", $form_state['values']['mail'], $form_state['values']['mailto'], $form_state['values']['domain'], $form_state['values']['port'], $form_state['values']['folder'], $form_state['values']['name'], $form_state['values']['pass'], $form_state['values']['extraimap'], $form_state['values']['mime'], $form_state['values']['imap'], $form_state['values']['security'], $form_state['values']['replies'], $form_state['values']['fromheader'], $form_state['values']['commands'], $form_state['values']['sigseparator'], $form_state['values']['enabled'], $form_state['values']['delete_after_read'], $form_state['values']['format'], $form_state['values']['authentication'], $form_state['values']['mid']);
+    drupal_write_record('mailhandler', $form_state['values'], $form_state['values']['mid']);
     drupal_set_message(t('Mailbox %mailbox updated.', array('%mailbox' => $form_state['values']['mail'])));
   }
   else {
-    db_query("INSERT INTO {mailhandler} (mail, mailto, domain, port, folder, name, pass, extraimap, mime, imap, security, replies, fromheader, commands, sigseparator, enabled, delete_after_read, format, authentication) VALUES ('%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', '%s', '%s', %d, %d, %d, '%s')", $form_state['values']['mail'], $form_state['values']['mailto'], $form_state['values']['domain'], $form_state['values']['port'], $form_state['values']['folder'], $form_state['values']['name'], $form_state['values']['pass'], $form_state['values']['extraimap'], $form_state['values']['mime'], $form_state['values']['imap'], $form_state['values']['security'], $form_state['values']['replies'], $form_state['values']['fromheader'], $form_state['values']['commands'], $form_state['values']['sigseparator'], $form_state['values']['enabled'], $form_state['values']['delete_after_read'], $form_state['values']['format'], $form_state['values']['authentication']);
+    drupal_write_record('mailhandler', $form_state['values']);    
     drupal_set_message(t('Mailbox %mailbox added.', array('%mailbox' => $form_state['values']['mail'])));
   }
-
   $form_state['redirect'] = 'admin/content/mailhandler';
   return;
 }
@@ -328,31 +294,6 @@ function mailhandler_test_mailbox(&$form_state) {
   return;
 }
 
-
-function mailhandler_list_mailboxes() {
-
-  $header = array(t('Mailbox'), t('Folder'), array('data' => t('Operations'), 'colspan' => 4));
-  $rows = array();
-  $result = db_query('SELECT * FROM {mailhandler} ORDER BY mail');
-  while ($mailbox = db_fetch_object($result)) {
-    $rows[] = array(
-      '<a href="mailto:'. $mailbox->mail .'">'. $mailbox->mail .'</a>',
-      $mailbox->folder ? check_plain($mailbox->folder) : '',
-      l(t('Retrieve'), 'admin/content/mailhandler/retrieve/'.$mailbox->mid, array('title' => t('Retrieve and process pending e-mails in this mailbox'))),
-      l(t('Edit'), 'admin/content/mailhandler/edit/'.$mailbox->mid, array('title' => t('Edit this mailbox configuration'))),
-      l(t('Clone'), 'admin/content/mailhandler/clone/'.$mailbox->mid, array('title' => t('Add a new mailbox, using this mailbox configuration as a template'))),
-      l(t('Delete'), 'admin/content/mailhandler/delete/'.$mailbox->mid, array('title' => t('Delete this mailbox'))),
-    );
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(array('data' => '<em>'. t('No mailboxes have been defined.') .'</em>', 'colspan' => 4));
-  }
-
-  return theme('table', $header, $rows);
-
-}
-
 // TODO: implement these settings at the per-config level.
 /**
  * Return the settings page for mailhandler
@@ -381,27 +322,5 @@ function mailhandler_admin_settings() {
     '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
   );
 
-  $form['#validate'][] = 'mailhandler_admin_settings_validate';
-
   return system_settings_form($form);
-}
-
-
-/**
- * Validation for mailhandler settings page
- */
-
-function mailhandler_admin_settings_validate($form, &$form_state) {
-
-  if (empty($form_state['values']['mailhandler_max_retrieval'])) {
-    $form_state['values']['mailhandler_max_retrieval'] = 0;
-  }
-
-  if (
-    !is_numeric($form_state['values']['mailhandler_max_retrieval']) ||
-    $form_state['values']['mailhandler_max_retrieval'] < 0 ||
-    $form_state['values']['mailhandler_max_retrieval'] <> intval($form_state['values']['mailhandler_max_retrieval'])
-  ) {
-    form_set_error('mailhandler_max_retrieval', t('The value should a positive integer, or zero.'));
-  }
 }
