@@ -113,90 +113,6 @@ function mailhandler_mail($key, &$message, $params) {
 }
 
 /**
- * Authenticate message based on sender's email address
- *   If the sender's email address matches an email address of a valid user, then assign
- *   that user's uid and name to the node object.
- *   
- * @param $node
- *   Object a node object
- * @param $header
- *   Object of message header information
- * @param $origbody
- *   String message body text
- * @param $mailbox
- *   Array of mailbox configuration
- * 
- * @return object, the node object
- */
-function mailhandler_authenticate_default($node, $header, $origbody, $mailbox) {
-  list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
-  if ($from_user = mailhandler_user_load($fromaddress, $node->pass, $mailbox)) {
-    $node->uid = $from_user->uid;
-    $node->name = $from_user->name;
-  }
-  // Try using mailalias email aliases
-  else if (function_exists('mailalias_user') && $from_user = mailhandler_user_load_alias($fromaddress, $node, $mailbox)) {
-    $node->uid = $from_user->uid;
-    $node->name = $from_user->name;
-  }
-  else {
-    // Authentication failed.  Try as anonymous.
-    $node->uid = 0;
-    $node->name = $fromname;
-  }
-  return $node;
-}
-
-/**
- * Authenticate message based on token from tokenauth module
- *   If the user's token is found somewhere in the "to" field, assign that user's uid and name 
- *   to the node object.  A rough search for the token somewhere in the "toaddress" is performed
- *   instead of an exact, ordered match in order to allow some freedom in the format of allowed
- *   "toaddress".  For example, if using a catchall email address, the toaddress could be:
- *   
- *   f93ksj35dx@example.com - where f93ksj35dx is the user's token
- *   or alternatively:
- *   f93ksj35dx-foo@example.com - where f93ksj35dx is the user's token and foo is the name of an
- *   Organic Group to which the message should be assigned.  
- *   
- *   A rough search allows for different approaches to use this single authentication method.
- *   
- * @param $node
- *   Object a node object
- * @param $header
- *   Object of message header information
- * @param $origbody
- *   String message body text
- * @param $mailbox
- *   Array of mailbox configuration
- * 
- * @return object, the node object
- */
-function mailhandler_authenticate_tokenauth($node, $header, $origbody, $mailbox) {
-  if (module_exists('tokenauth')) {
-    list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
-    // If user with given email address exists and their token is in the toaddress, allow.
-    if (($from_user = mailhandler_user_load($fromaddress, $node->pass, $mailbox))
-    && strpos($header->to[0]->mailbox, tokenauth_get_token($from_user->uid)) !== FALSE) {
-      $node->uid = $from_user->uid;
-      $node->name = $from_user->name;
-    }
-    // Try using mailalias email aliases
-    else if (function_exists('mailalias_user') && ($from_user = mailhandler_user_load_alias($fromaddress, $node, $mailbox))
-    && strpos($header->to[0]->mailbox, tokenauth_get_token($from_user->uid)) !== FALSE) {
-      $node->uid = $from_user->uid;
-      $node->name = $from_user->name;
-    }
-    else {
-      // If token authentication fails, try as anonymous.
-      $node->uid = 0;
-      $node->name = $fromname;
-    }
-  }
-  return $node;
-}
-
-/**
  * Determine from address either using the mailbox setting or via the header information
  * 
  * @param $header
@@ -455,6 +371,16 @@ function mailhandler_mailhandler_authenticate() {
       'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
       'file' => 'MailhandlerAuthenticateDefault.inc',
       'class' => 'MailhandlerAuthenticateDefault',
+      # 'parent' => '',
+    ),
+  );
+  $plugins['MailhandlerAuthenticateTokenauth'] = array(
+    'name' => 'Mailhandler Tokenauth authentication',
+    'description' => 'Authenticate messages based on tokens from Tokenauth',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
+      'file' => 'MailhandlerAuthenticateTokenauth.inc',
+      'class' => 'MailhandlerAuthenticateTokenauth',
       # 'parent' => '',
     ),
   );
