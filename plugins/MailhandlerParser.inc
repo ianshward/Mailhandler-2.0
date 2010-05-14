@@ -13,8 +13,6 @@ class MailhandlerParser extends FeedsParser {
     $fetched = $batch->getRaw();
     if ($fetched['new']) {
       module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-      // TODO implement handling $limit.  This could be done very easily
-      // w/ a setting in this->config, and passed to mailhandler_retrieve()
       $messages = array();
       $messages = mailhandler_retrieve($fetched['mailbox'], $this->config['limit'], $this->config['encoding']);
       // Populate batch.
@@ -45,7 +43,6 @@ class MailhandlerParser extends FeedsParser {
       }
     }
     // Custom cases.  TODO: There's probably a smarter way to do this.
-    //$message['type'] = $this->config['content_type'];
     $message['title'] = $message['subject'];
     $message['body'] = $message['origbody'];
     if ($this->config['commands']) {
