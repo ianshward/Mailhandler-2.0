@@ -293,34 +293,3 @@ function mailhandler_test_mailbox(&$form_state) {
 
   return;
 }
-
-// TODO: implement these settings at the per-config level.
-/**
- * Return the settings page for mailhandler
- */
-function mailhandler_admin_settings() {
-
-  $form['mailhandler_default_type'] = array(
-    '#type' => 'radios',
-    '#title' => t('Default content type'),
-    '#options' => node_get_types('names'),
-    '#default_value' => mailhandler_default_type(),
-    '#description' => t('If an incoming message does not specify a particular content type, then use this type as a default.'),
-  );
-
-  $form['mailhandler_max_retrieval'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Cron maximum message retrieval'),
-    '#default_value' => variable_get('mailhandler_max_retrieval', 0),
-    '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be processed during each cron run. This is a global setting and applies to all mailboxes. A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
-  );
-  
-  $form['mailhandler_default_encoding'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default character encoding'),
-    '#default_value' => 'UTF-8',
-    '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
-  );
-
-  return system_settings_form($form);
-}

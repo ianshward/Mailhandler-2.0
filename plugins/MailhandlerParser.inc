@@ -16,7 +16,7 @@ class MailhandlerParser extends FeedsParser {
       // TODO implement handling $limit.  This could be done very easily
       // w/ a setting in this->config, and passed to mailhandler_retrieve()
       $messages = array();
-      $messages = mailhandler_retrieve($fetched['mailbox']);
+      $messages = mailhandler_retrieve($fetched['mailbox'], $this->config['limit'], $this->config['encoding']);
       // Populate batch.
       if (!empty($messages)) {
         foreach ($messages as &$message) {
@@ -101,6 +101,18 @@ class MailhandlerParser extends FeedsParser {
       '#description' => t('Default commands for this mailbox feed.'),
       '#default_value' => $this->config['default_commands'],
     );
+    $form['encoding'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default character encoding'),
+      '#default_value' => $this->config['encoding'],
+      '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
+    );
+    $form['limit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Maximum messages to retrieve'),
+      '#default_value' => $this->config['limit'],
+      '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
+    );
     return $form;
   }
   
@@ -111,6 +123,8 @@ class MailhandlerParser extends FeedsParser {
     return array(
       'commands' => 1,
       'default_commands' => '',
+      'encoding' => 'UTF-8',
+      'limit' => 0,
     );
   }
 

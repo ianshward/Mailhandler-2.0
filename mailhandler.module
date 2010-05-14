@@ -62,15 +62,6 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
   );
-
-  $items['admin/settings/mailhandler'] = array(
-    'title' => 'Mailhandler Settings',
-    'description' => t('Set the default content type for incoming messages and set the cron limit.'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mailhandler_admin_settings'),
-    'access arguments' => array('administer mailhandler'),
-    'file' => 'mailhandler.admin.inc',
-  );
   $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
     'title' => 'Mailhandler',
     'title callback' => 'mailhandler_operations_title',

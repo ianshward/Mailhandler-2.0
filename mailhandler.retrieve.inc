@@ -33,13 +33,12 @@ function mailhandler_open_mailbox($mailbox) {
  * $data = get_part($stream, $msg_number, "TEXT/PLAIN"); // get plain text
  * $data = get_part($stream, $msg_number, "TEXT/HTML"); // get HTML text
  */
-function mailhandler_get_part($stream, $msg_number, $mime_type, $structure = false, $part_number = false) {
+function mailhandler_get_part($stream, $msg_number, $mime_type, $structure = false, $part_number = false, $encoding) {
 
   if (!$structure) {
     $structure = imap_fetchstructure($stream, $msg_number, FT_UID);
   }
   if ($structure) {
-    $encoding = variable_get('mailhandler_default_encoding', 'UTF-8');
     foreach ($structure->parameters as $parameter) {
       if (strtoupper($parameter->attribute) == 'CHARSET') {
         $encoding = $parameter->value;
@@ -66,7 +65,7 @@ function mailhandler_get_part($stream, $msg_number, $mime_type, $structure = fal
         if ($part_number) {
           $prefix = $part_number .'.';
         }
-        $data = mailhandler_get_part($stream, $msg_number, $mime_type, $sub_structure, $prefix . ($index + 1));
+        $data = mailhandler_get_part($stream, $msg_number, $mime_type, $sub_structure, $prefix . ($index + 1), $encoding);
         if ($data) {
           return $data;
         }
@@ -263,7 +262,7 @@ function mailhandler_get_unread_messages($result) {
  *   Int message number
  * @return unknown_type
  */
-function mailhandler_retrieve_message($result, $mailbox, $i) {
+function mailhandler_retrieve_message($result, $mailbox, $i, $encoding) {
   $header = imap_header($result, imap_msgno($result, $i));
   // Initialize the subject in case it's missing.
   if (!isset($header->subject)) {
@@ -271,10 +270,10 @@ function mailhandler_retrieve_message($result, $mailbox, $i) {
   }
   $mime = explode(',', $mailbox['mime']);
   // Get the first text part - this will be the node body
-  $origbody = mailhandler_get_part($result, $i, $mime[0]);
+  $origbody = mailhandler_get_part($result, $i, $mime[0], false, false, $encoding);
   // If we didn't get a body from our first attempt, try the alternate format (HTML or PLAIN)
   if (!$origbody) {
-    $origbody = mailhandler_get_part($result, $i, $mime[1]);
+    $origbody = mailhandler_get_part($result, $i, $mime[1], false, false, $encoding);
   }
   // Parse MIME parts, so all mailhandler modules have access to
   // the full array of mime parts without having to process the email.
@@ -301,7 +300,7 @@ function mailhandler_retrieve_message($result, $mailbox, $i) {
  * @param $limit
  *   Int - the maximim number of messages to fetch on retrieval, only for 'auto' mode
  */
-function mailhandler_retrieve($mailbox, $limit = 0) {
+function mailhandler_retrieve($mailbox, $limit = 0, $encoding = 'UTF-8') {
   // This is cast as string in hook_menu, otherwise the url argument would get used.
   $limit = (int) $limit;
   if ($result = mailhandler_open_mailbox($mailbox)) {
@@ -314,7 +313,7 @@ function mailhandler_retrieve($mailbox, $limit = 0) {
     $messages = array();
     $retrieved = 0;
     while ($new && (!$limit || $retrieved < $limit)) {
-      $messages[] = mailhandler_retrieve_message($result, $mailbox, array_shift($new), $context = array());
+      $messages[] = mailhandler_retrieve_message($result, $mailbox, array_shift($new), $encoding);
       $retrieved++;
     }
     imap_close($result, CL_EXPUNGE);
