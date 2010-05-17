@@ -5,9 +5,7 @@
  */
 function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
   module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-
   $edit = $mailbox ? mailhandler_mailboxes_load($mailbox) : mailhandler_mailboxes_load('', TRUE);
-  
   if ($clone) {
     unset($mid);
   }
@@ -127,6 +125,51 @@ function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
     '#default_value' => $edit->delete_after_read, 
     '#description' => t('Uncheck this box to leave read messages in the mailbox. They will not be processed again unless they become marked as unread.  If you selected "POP3" as your mailbox type, you must check this box.'));
 
+  $form['commands'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Default commands'),
+    '#description' => t('A set of commands which are added to each message.'),
+    '#default_value' => $edit->commands,
+  );
+  $form['encoding'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default character encoding'),
+    '#default_value' => $edit->encoding,
+    '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
+  );
+  $form['max'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum messages to retrieve'),
+    '#default_value' => $edit->limit,
+    '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
+  );
+  ctools_include('plugins');
+  $options = array();
+  $plugins = ctools_get_plugins('mailhandler', 'commands');
+  foreach ($plugins as $key => $info) {
+    $options[$key] = $info['name'];
+  }
+  $form['commandplugin'] = array(
+    '#type' => 'select',
+    '#title' => t('Command plugins'),
+    '#description' => t('Choose the command plugins to use'),
+    '#options' => $options,
+    '#multiple' => TRUE,
+    '#default_value' => $edit->commandplugin,
+  );
+  $options = array(); //$options[0] = t('None');
+  $plugins = ctools_get_plugins('mailhandler', 'authenticate');
+  foreach ($plugins as $key => $info) {
+    $options[$key] = $info['name'];
+  }
+  $form['authenticateplugin'] = array(
+    '#type' => 'select',
+    '#title' => t('Authentication plugin'),
+    '#description' => t('Choose an authentication plugin'),
+    '#options' => $options,
+    '#default_value' => $edit->authenticateplugin,
+    '#required' => FALSE,
+  );
   // Allow administrators to select the format of saved nodes/comments
   $form['format'] = filter_form($edit->format);
   

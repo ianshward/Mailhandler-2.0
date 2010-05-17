@@ -5,11 +5,9 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function process(FeedsImportBatch $batch, FeedsSource $source) {
     while ($item = $batch->shiftItem()) {
       $node = new stdClass();
-      $node->name = 'admin'; // TODO: do not hard code this.
       $node->type = $this->config['content_type'];
-      // TODO: Handle node->vid for existing nodes.
       $this->map($item, $node);
-      if ($item['commands']) {
+      if ($item['mailbox']['commandplugin']) {
         $this->commands($item, $node);
       }
       $this->authenticate($item, $node);
@@ -165,7 +163,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitNode($node, $header, $mailbox, $origbody) {
     global $user;
-    watchdog('mh-node', '<pre>' . print_r($node, TRUE) . '</pre>');
     list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
     // Reset the static cache 
     form_set_error(NULL, '', TRUE);
@@ -262,8 +259,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Override setTargetElement to operate on a target item that is a node.
    */
   public function setTargetElement($target_node, $target_element, $value) {
-    watchdog('TE', '<pre>' . print_r($target_node, TRUE) .'Target Element:' . print_r($target_element, TRUE) . 'Value:' . print_r($value, TRUE) . '</pre>');
-    // TODO: body will need a custom callback, to strip commands, for example.
     if ($target_element == 'body') {
       $target_node->teaser = $value;
       $target_node->body = $value;
@@ -328,7 +323,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Parse and apply commands.
    */
   public function commands($item, &$node) {
-    if (($plugins = $this->config['command_plugin']) && !empty($plugins)) {
+    if (($plugins = $item['mailbox']['commandplugin']) && !empty($plugins)) {
       foreach ($plugins as $plugin) {
         if ($class = mailhandler_plugin_load_class($plugin, 'commands', 'handler')) {
           $class->parse($item, &$node);
@@ -343,7 +338,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    */
   public function authenticate($item, &$node) {
     // TODO: allow for multiple authenticate plugins to be weighted and implemented.
-    if (($plugin = $this->config['authenticate_plugin'])) {
+    if (($plugin = $item['mailbox']['authenticateplugin'])) {
       if ($class = mailhandler_plugin_load_class($plugin, 'authenticate', 'handler')) {
         $class->authenticate($item, &$node);
       }
@@ -363,32 +358,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       '#options' => $types,
       '#default_value' => $this->config['content_type'],
     );
-    $options = array();
-    $plugins = ctools_get_plugins('mailhandler', 'commands');
-    foreach ($plugins as $key => $info) {
-      $options[$key] = $info['name'];
-    }
-    $form['command_plugin'] = array(
-      '#type' => 'select',
-      '#title' => t('Command plugins'),
-      '#description' => t('Choose the command plugins to use'),
-      '#options' => $options,
-      '#multiple' => TRUE,
-      '#default_value' => $this->config['command_plugin'],
-    );
-    $options = array(); $options[0] = t('None');
-    $plugins = ctools_get_plugins('mailhandler', 'authenticate');
-    foreach ($plugins as $key => $info) {
-      $options[$key] = $info['name'];
-    }
-    $form['authenticate_plugin'] = array(
-      '#type' => 'select',
-      '#title' => t('Authentication plugin'),
-      '#description' => t('Choose an authentication plugin'),
-      '#options' => $options,
-      '#default_value' => $this->config['authenticate_plugin'],
-      '#required' => FALSE,
-    );
     return $form;
   }
   
@@ -401,8 +370,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
     return array(
       'content_type' => $type,
       'mappings' => array(),
-      'command_plugin' => array(),
-      'authenticate_plugin' => 0,
     );
   }
 

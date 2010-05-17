@@ -238,12 +238,14 @@ function theme_mailhandler_operations_view($maps) {
   // Theme these into a table with EDIT | DELETE | ACTIVATE | EXPORT
   $header = array(t('Name'), t('Status'), t('Operations'));
   $rows = array();
-  foreach ($maps as $map) {
-    $rows[] = array(
-      l($map->name, "admin/settings/mailhandler/edit/$map->name"),
+  if (!empty($maps)) {
+    foreach ($maps as $map) {
+      $rows[] = array(
+      l($map->mail, "admin/settings/mailhandler/edit/$map->mail"),
       t($map->type),
       mailhandler_operations_view_options($map),
-    );
+      );
+    }
   }
   return theme('table', $header, $rows);
 }
@@ -252,20 +254,20 @@ function mailhandler_operations_view_options($mailbox) {
   $ops = array();
   $ops['edit'] = array(
     'name' => t('Edit'),
-    'path' => "admin/content/mailhandler/edit/$mailbox->name",
+    'path' => "admin/content/mailhandler/edit/$mailbox->mail",
   );
   $ops['delete'] = array(
     'name' => t('Delete'),
-    'path' => "admin/content/mailhandler/delete/$mailbox->name"
+    'path' => "admin/content/mailhandler/delete/$mailbox->mail"
   );
-  $mailbox->name == $active ? $status = t('Disable') : $status = t('Enable');
+  $mailbox->mail == $active ? $status = t('Disable') : $status = t('Enable');
   $ops['toggle'] = array(
     'name' => $status,
-    'path' => "admin/content/mailhandler/toggle/$mailbox->name"
+    'path' => "admin/content/mailhandler/toggle/$mailbox->mail"
   );
   $ops['export'] = array(
     'name' => t('Export'),
-    'path' => "admin/content/mailhandler/export/$mailbox->name"
+    'path' => "admin/content/mailhandler/export/$mailbox->mail"
   );
   $links = array();
   foreach ($ops as $op) {
@@ -316,7 +318,7 @@ function mailhandler_operations_title($op = '', $mailbox = '') {
 function mailhandler_operations($op = '', $mailbox = '') {
   switch($op) {
     case 'edit':
-      return drupal_get_form('mailhandler_add_edit_mailbox', $mailbox->name);
+      return drupal_get_form('mailhandler_add_edit_mailbox', $mailbox->mail);
       break;
     case 'delete':
       return drupal_get_form('mailhandler_operations_delete_confirm', $mailbox);
@@ -325,7 +327,7 @@ function mailhandler_operations($op = '', $mailbox = '') {
       return drupal_get_form('mailhandler_operations_toggle_confirm', $mailbox);
       break;
     case 'export':
-      return drupal_get_form('mailhandler_mailbox_export', $mailbox->name);
+      return drupal_get_form('mailhandler_mailbox_export', $mailbox->mail);
     default:
       return mailhandler_operations_view();
   }

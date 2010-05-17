@@ -124,11 +124,31 @@ function mailhandler_uninstall() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'authentication' => array(
+      'authenticateplugin' => array(
         'type' => 'varchar',
         'length' => '255',
         'not null' => TRUE,
-        'default' => 'mailhandler_default',
+        'default' => 'MailhandlerAuthenticateDefault',
+      ),
+      'max' => array(
+        'type' => 'int',
+        'length' => '10',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'encoding' => array(
+        'type' => 'varchar',
+        'length' => '32',
+        'not null' => TRUE,
+        'default' => 'UTF-8',
+      ),
+      'commandplugin' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => 'MailhandlerCommandsDefault',
+        'serialize' => TRUE,
       ),
     ),
     'primary key' => array('mid'),

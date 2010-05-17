@@ -18,7 +18,10 @@ class MailhandlerMailbox {
   var $delete_after_read;
   var $enabled;
   var $format;
-  var $authentication;
+  var $authenticateplugin;
+  var $commandplugin;
+  var $encoding;
+  var $limit;
 
   /**
    * Constructor
@@ -31,6 +34,8 @@ class MailhandlerMailbox {
     $this->delete_after_read = 1;
     $this->enabled = 1;
     $this->filter = FILTER_FORMAT_DEFAULT;
+    $this->max = 0;
+    $this->encoding = 'UTF-8';
   }
 
   function load() {

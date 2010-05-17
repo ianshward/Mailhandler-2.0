@@ -14,7 +14,7 @@ class MailhandlerParser extends FeedsParser {
     if ($fetched['new']) {
       module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
       $messages = array();
-      $messages = mailhandler_retrieve($fetched['mailbox'], $this->config['limit'], $this->config['encoding']);
+      $messages = mailhandler_retrieve($fetched['mailbox'], $fetched['mailbox']['limit'], $fetched['mailbox']['encoding']);
       // Populate batch.
       if (!empty($messages)) {
         foreach ($messages as &$message) {
@@ -45,9 +45,6 @@ class MailhandlerParser extends FeedsParser {
     // Custom cases.  TODO: There's probably a smarter way to do this.
     $message['title'] = $message['subject'];
     $message['body'] = $message['origbody'];
-    if ($this->config['commands']) {
-      $message['commands'] = $this->config['default_commands'];
-    }
   }
   /*
    * This defines sources which user's can select to map values to.
@@ -80,49 +77,49 @@ class MailhandlerParser extends FeedsParser {
     return $sources;
   }
 
-  /**
-   * Override parent::configForm().
-   */
-  public function configForm(&$form_state) {
-    $form = array();
-    $form['commands'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Parse commands?'),
-      '#description' => t('Check this box to allow commands sent by users in email messages to be parsed and applied to the created node.'),
-      '#options' => array(0 => t('On'), 1 => t('Off')),
-      '#default_value' => $this->config['commands'],
-    );
-    $form['default_commands'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Default commands'),
-      '#description' => t('Default commands for this mailbox feed.'),
-      '#default_value' => $this->config['default_commands'],
-    );
-    $form['encoding'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Default character encoding'),
-      '#default_value' => $this->config['encoding'],
-      '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
-    );
-    $form['limit'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Maximum messages to retrieve'),
-      '#default_value' => $this->config['limit'],
-      '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
-    );
-    return $form;
-  }
-  
-  /**
-   * Override parent::configDefaults().
-   */
-  public function configDefaults() {
-    return array(
-      'commands' => 1,
-      'default_commands' => '',
-      'encoding' => 'UTF-8',
-      'limit' => 0,
-    );
-  }
+//  /**
+//   * Override parent::configForm().
+//   */
+//  public function configForm(&$form_state) {
+//    $form = array();
+//    $form['commands'] = array(
+//      '#type' => 'checkbox',
+//      '#title' => t('Parse commands?'),
+//      '#description' => t('Check this box to allow commands sent by users in email messages to be parsed and applied to the created node.'),
+//      '#options' => array(0 => t('On'), 1 => t('Off')),
+//      '#default_value' => $this->config['commands'],
+//    );
+//    $form['default_commands'] = array(
+//      '#type' => 'textarea',
+//      '#title' => t('Default commands'),
+//      '#description' => t('Default commands for this mailbox feed.'),
+//      '#default_value' => $this->config['default_commands'],
+//    );
+//    $form['encoding'] = array(
+//      '#type' => 'textfield',
+//      '#title' => t('Default character encoding'),
+//      '#default_value' => $this->config['encoding'],
+//      '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
+//    );
+//    $form['limit'] = array(
+//      '#type' => 'textfield',
+//      '#title' => t('Maximum messages to retrieve'),
+//      '#default_value' => $this->config['limit'],
+//      '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
+//    );
+//    return $form;
+//  }
+//  
+//  /**
+//   * Override parent::configDefaults().
+//   */
+//  public function configDefaults() {
+//    return array(
+//      'commands' => 1,
+//      'default_commands' => '',
+//      'encoding' => 'UTF-8',
+//      'limit' => 0,
+//    );
+//  }
 
 }

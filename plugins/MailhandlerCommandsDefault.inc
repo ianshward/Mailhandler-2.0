@@ -10,8 +10,8 @@ class MailhandlerCommandsDefault {
      watchdog('commands', 'parsing commands');
      $body = $item['body'];
      // Prepend the default commands.  User-added commands will override the default commands.
-     if ($item['commands']) {
-       $body = trim($item['commands']) ."\n". $body;
+     if ($item['mailbox']['commands']) {
+       $body = trim($item['mailbox']['commands']) ."\n". $body;
      }
      $commands = array(); $endcommands = NULL;
      // Collect the commands and locate signature
@@ -36,7 +36,6 @@ class MailhandlerCommandsDefault {
    */
   function process($item, &$node) {
     watchdog('commands', 'processing commands');
-    dwd('parsed commands', $this->commands);
   }
   
 
