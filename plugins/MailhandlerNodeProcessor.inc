@@ -57,14 +57,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         $node->$key = $value;
       }
     }
-
-    // Set a default type if none provided
-    // TODO: allow setting default node type somehow
-    // TODO: if setting node type in commands will still be supported,
-    // it will be necessary to determine the node type by this point so that
-    // node_object_prepare can correctly initiaize the node object using the correct type.
-    // unless there's another way to rearrange this.  Needs some thought.
-    if (!$node->type) $node->type = 'page';
     // Apply defaults to the $node object, and allow modules to add default values
     require_once($base_path . 'modules/node/node.pages.inc');
     node_object_prepare($node);
