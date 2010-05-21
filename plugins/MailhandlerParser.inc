@@ -42,9 +42,12 @@ class MailhandlerParser extends FeedsParser {
         $message[$key] = $value;
       }
     }
-    // Custom cases.  TODO: There's probably a smarter way to do this.
+    // Custom cases.  TODO: There's probably a smarter way to do this.  The reason I
+    // do this is because it seems like setTargetElement expects these property names
+    // to match up with actual property names on the node.
     $message['title'] = $message['subject'];
     $message['body'] = $message['origbody'];
+    $message['created'] = $message['date'];
   }
   /*
    * This defines sources which user's can select to map values to.
@@ -60,19 +63,31 @@ class MailhandlerParser extends FeedsParser {
         'name' => t('Body'),
         'description' => t('The cleaned email body, commands removed.'),
       ),
+      'created' => array(
+        'name' => t('Date'),
+        'description' => t('The date of the email')
+      ),
       'type' => array(
         'name' => t('Type'),
         'description' => t('The type of node'),
-      ),
-      'size' => array(
-        'name' => t('Size'),
-        'description' => t('The size of the mail'),
       ),
       'origbody' => array(
         'name' => t('Original body'),
         'description' => t('The original body of the email'),
       ),
+      'mimeparts' => array(
+        'name' => t('Mimeparts'),
+        'description' => t('The email mimeparts'),
+      ),
     );
+    // Make all IMAP header keys available as selectable mapping sources.
+    $parts = array('date', 'subject', 'message_id', 'toaddress', 'to', 'fromaddress', 'from', 'reply_toaddress', 'reply_to', 'senderaddress', 'sender', 'Recent', 'Unseen', 'Flagged', 'Answered', 'Deleted', 'Draft', 'Msgno', 'MailDate', 'Size', 'udate');
+    foreach ($parts as $part) {
+      $sources[$part] = array(
+        'title' => t($part),
+        'description' => t('IMAP header property.'),
+      );
+    }
     drupal_alter('feeds_node_processor_sources', $sources);
     return $sources;
   }

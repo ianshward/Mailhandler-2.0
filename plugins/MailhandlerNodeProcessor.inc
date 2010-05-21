@@ -251,11 +251,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Override setTargetElement to operate on a target item that is a node.
    */
   public function setTargetElement($target_node, $target_element, $value) {
-    if ($target_element == 'body') {
-      $target_node->teaser = $value;
-      $target_node->body = $value;
-    }
-    elseif (in_array($target_element, array('title', 'status', 'created', 'type', 'size', 'origbody'))) {
+    if (in_array($target_element, array('status', 'created', 'type', 'size', 'origbody'))) {
       $target_node->$target_element = $value;
     }
   }
@@ -280,7 +276,9 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       'created' => array(
         'name' => t('Published date'),
         'description' => t('The UNIX time when a node has been published.'),
+        'callback' => '_mailhandler_node_processor_target_created',
       ),
+      // TODO: teaser.
     );
     // Let other modules expose mapping targets.
     self::loadMappers();
@@ -395,5 +393,8 @@ function _mailhandler_node_processor_target_title($node, $target, $value) {
   }
 }
 
+function _mailhandler_node_processor_target_created($node, $target, $value) {
+  // TODO
+}
 
 
