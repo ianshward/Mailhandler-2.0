@@ -27,7 +27,19 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 //          $node->revision = $node->vid = $vid;
 //        }
 //      }
+      // TODO - implement this in a callback and merge it w/ _mailhandler_post_save
+      // Modules may override node elements before submitting. they do so by returning the node.
+      foreach (module_list() as $name) {
+        if (module_hook($name, 'mailhandler')) {
+          $function = $name .'_mailhandler';
+          if (!($node = $function($node, $item['header'], $item['mailbox']))) {
+            // Exit if a module has handled the submitted data.
+            break;
+          }
+        }
+      }
       // Submit
+      // TODO: using $nid as the variable for something that's actually a whole object is confusing.
       if ($node->type == 'comment') {
         // In order to fall back to the permission system for comment status, the status property must
         // be unset if type is comment.  It will get set by explicit commands, and if not, by
@@ -40,64 +52,17 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         $nid = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody']);
         $type = 'node';
       }
-      
-    }
-    // TODO: review this.  Handle counting.
-    return FEEDS_BATCH_COMPLETE;
-  }
-
-  protected function MessageProcess($header, $origbody, $mailbox) {
-    // TODO: this does not necessarily need to happen here... could be done right before submit?
-    mailhandler_switch_user();
-    // We must process before authenticating because the password may be in Commands
-    $node = $this->MessagePrepare($header, $origbody, $mailbox);
-
-    // Authenticate the message
-    // TODO: ctools plugin
-    if (!$node = mailhandler_mailhandler_authenticate('execute', $mailbox['authentication'], array($node, $header, $origbody, $mailbox))) {
-      watchdog('mailhandler', 'Message failed authentication', array(), WATCHDOG_ERROR);
-      return FALSE;
-    }
-
-    // Put $mimeparts on the node
-    $node->mimeparts = $mimeparts;
-
-    // We need to change the current user this has to be done here to allow modules to create users
-    mailhandler_switch_user($node->uid);
-
-    // Modules may override node elements before submitting. they do so by returning the node.
-    foreach (module_list() as $name) {
-      if (module_hook($name, 'mailhandler')) {
-        $function = $name .'_mailhandler';
-        if (!($node = $function($node, $result, $i, $header, $mailbox))) {
-          // Exit if a module has handled the submitted data.
-          break;
+      // Invoke a second hook for modules to operate on the newly created/edited node/comment.
+      foreach (module_list() as $name) {
+        if (module_hook($name, 'mailhandler_post_save')) {
+          $function = $name .'_mailhandler_post_save';
+          // Pass in the $nid (which could be a $cid, depending on $node->type)
+          $function($nid, $type);
         }
       }
     }
-
-    if ($node) {
-      if ($node->type == 'comment') {
-        $nid = $this->MessageCommentSubmit($node, $header, $mailbox, $origbody);
-        $type = 'comment';
-      }
-      else {
-        $nid = $this->MessageNodeSubmit($node, $header, $mailbox, $origbody);
-        $type = 'node';
-      }
-    }
-
-    // Invoke a second hook for modules to operate on the newly created/edited node/comment.
-    foreach (module_list() as $name) {
-      if (module_hook($name, 'mailhandler_post_save')) {
-        $function = $name .'_mailhandler_post_save';
-        // Pass in the $nid (which could be a $cid, depending on $node->type)
-        $function($nid, $type);
-      }
-    }
-
-    // switch back to original user
-    mailhandler_switch_user();
+    // TODO: review this.  Handle counting.
+    return FEEDS_BATCH_COMPLETE;
   }
 
   protected function submitNode($node, $header, $mailbox, $origbody) {
