@@ -10,6 +10,13 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       if ($item['mailbox']['commandplugin']) {
         $this->commands($item, $node);
       }
+      // Handle revision information now that the final 'type' is known
+      if ($node->nid && $node->type != 'comment') {
+        $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
+        if ($vid) {
+          $node->revision = $node->vid = $vid;
+        }
+      }
       $this->authenticate($item, $node);
       // Prepare the object only after we know the final node type.
       static $included;
@@ -18,16 +25,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         $included = TRUE;
       }
       node_object_prepare($node);
-
-      // TODO: this needs to go somewhere.
-      // If an nid command was supplied, and type is not 'comment', append the revision number
-//      if ($node->nid && $node->type != 'comment') {
-//        $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
-//        if ($vid) {
-//          $node->revision = $node->vid = $vid;
-//        }
-//      }
-      // TODO - implement this in a callback and merge it w/ _mailhandler_post_save
       // Modules may override node elements before submitting. they do so by returning the node.
       foreach (module_list() as $name) {
         if (module_hook($name, 'mailhandler')) {
@@ -38,26 +35,22 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
           }
         }
       }
-      // Submit
-      // TODO: using $nid as the variable for something that's actually a whole object is confusing.
       if ($node->type == 'comment') {
-        // In order to fall back to the permission system for comment status, the status property must
-        // be unset if type is comment.  It will get set by explicit commands, and if not, by
-        // comment_save itself.
+        // 'status' for nodes and comments are backwards.  This makes the permission system handle it.
         unset($node->status);
-        $nid = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody']);
+        $object = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody']);
         $type = 'comment';
       }
       else {
-        $nid = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody']);
+        $object = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody']);
         $type = 'node';
       }
       // Invoke a second hook for modules to operate on the newly created/edited node/comment.
       foreach (module_list() as $name) {
         if (module_hook($name, 'mailhandler_post_save')) {
           $function = $name .'_mailhandler_post_save';
-          // Pass in the $nid (which could be a $cid, depending on $node->type)
-          $function($nid, $type);
+          // Pass in the result from submit (which could be a cid, or a node object)
+          $function($object, $type);
         }
       }
     }
