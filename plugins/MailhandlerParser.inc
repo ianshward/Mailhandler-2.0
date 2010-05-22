@@ -48,6 +48,7 @@ class MailhandlerParser extends FeedsParser {
     $message['title'] = $message['subject'];
     $message['body'] = $message['origbody'];
     $message['created'] = $message['date'];
+    $message['threading'] = array('references' => $message['header']->references, 'in_reply_to' => $message['header']->in_reply_to); //$message;
   }
   /*
    * This defines sources which user's can select to map values to.
@@ -78,6 +79,10 @@ class MailhandlerParser extends FeedsParser {
       'mimeparts' => array(
         'name' => t('Mimeparts'),
         'description' => t('The email mimeparts'),
+      ),
+      'threading' => array(
+        'name' => t('Threading'),
+        'description' => t('Email threading information'),
       ),
     );
     // Make all IMAP header keys available as selectable mapping sources.

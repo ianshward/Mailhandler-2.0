@@ -18,9 +18,21 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         $included = TRUE;
       }
       node_object_prepare($node);
-      
+
+      // TODO: this needs to go somewhere.
+      // If an nid command was supplied, and type is not 'comment', append the revision number
+//      if ($node->nid && $node->type != 'comment') {
+//        $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
+//        if ($vid) {
+//          $node->revision = $node->vid = $vid;
+//        }
+//      }
       // Submit
       if ($node->type == 'comment') {
+        // In order to fall back to the permission system for comment status, the status property must
+        // be unset if type is comment.  It will get set by explicit commands, and if not, by
+        // comment_save itself.
+        unset($node->status);
         $nid = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody']);
         $type = 'comment';
       }
@@ -32,71 +44,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
     }
     // TODO: review this.  Handle counting.
     return FEEDS_BATCH_COMPLETE;
-  }
-  
-  protected function MessagePrepare($header, $body, $mailbox) {
-    // Initialise a node object
-    $node = new stdClass();
-    $node->pass = NULL;
-
-    // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
-    if (!empty($header->references)) {
-      // we want the final element in references header, watching out for white space
-      $threading = substr(strrchr($header->references, '<'), 0);
-    }
-    else if (!empty($header->in_reply_to)) {
-      $threading = str_replace(strstr($header->in_reply_to, '>'), '>', $header->in_reply_to); // Some MUAs send more info in that header.
-    }
-    if (isset($threading) && $threading = rtrim(ltrim($threading, '<'), '>')) { //strip angle brackets
-      if ($threading) $node->threading = $threading;
-      parse_str($threading, $tmp);
-      if ($tmp['host']) {
-        $tmp['host'] = ltrim($tmp['host'], '@'); // strip unnecessary @ from 'host' element
-      }
-      foreach ($tmp as $key => $value) {
-        $node->$key = $value;
-      }
-    }
-    // Apply defaults to the $node object, and allow modules to add default values
-    require_once($base_path . 'modules/node/node.pages.inc');
-    node_object_prepare($node);
-    // In order to fall back to the permission system for comment status, the status property must
-    // be unset if type is comment.  It will get set by explicit commands, and if not, by
-    // comment_save itself.
-    if($node->type == 'comment') {
-      unset($node->status);
-    }
-    
-    // This is raw, w/ the sig, the commands, etc. 
-    $node->body = $body;
-
-    if (empty($node->teaser)) $node->teaser = node_teaser($node->body);
-
-    // decode encoded subject line
-    $subjectarr = imap_mime_header_decode($header->subject);
-    if (empty($subjectarr)) {
-      $node->title = truncate_utf8(trim(decode_entities(strip_tags(check_markup($node->body)))), 29, TRUE);
-    }
-    else {
-      for ($i = 0; $i < count($subjectarr); $i++) {
-        if ($subjectarr[$i]->charset != 'default')
-        $node->title .= drupal_convert_to_utf8($subjectarr[$i]->text, $subjectarr[$i]->charset);
-        else
-        $node->title .= $subjectarr[$i]->text;
-      }
-    }
-    $node->date = $node->changed = format_date($header->udate, 'custom', 'Y-m-d H:i:s O');
-    $node->format = $mailbox['format'];
-
-    // If an nid command was supplied, and type is not 'comment', append the revision number
-    if ($node->nid && $node->type != 'comment') {
-      $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
-      if ($vid) {
-        $node->revision = $node->vid = $vid;
-      }
-    }
-
-    return $node;
   }
 
   protected function MessageProcess($header, $origbody, $mailbox) {
@@ -278,7 +225,16 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         'description' => t('The UNIX time when a node has been published.'),
         'callback' => '_mailhandler_node_processor_target_created',
       ),
-      // TODO: teaser.
+      'teaser' => array(
+        'name' => t('Teaser'),
+        'description' => t('The node teaser'),
+        'callback' => '_mailhandler_node_processor_target_teaser',
+      ),
+      'threading' => array(
+        'name' => t('Threading'),
+        'description' => t('Email threading information'),
+        'callback' => '_mailhandler_node_processor_target_threading',
+      ),
     );
     // Let other modules expose mapping targets.
     self::loadMappers();
@@ -395,6 +351,33 @@ function _mailhandler_node_processor_target_title($node, $target, $value) {
 
 function _mailhandler_node_processor_target_created($node, $target, $value) {
   // TODO
+}
+
+function _mailhandler_node_processor_target_teaser($node, $target, $value) {
+  // TODO
+}
+
+function _mailhandler_node_processor_target_threading($node, $target, $value) {
+  // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
+  if (!empty($value['references'])) {
+    // we want the final element in references header, watching out for white space
+    $threading = substr(strrchr($value['references'], '<'), 0);
+  }
+  else if (!empty($value['in_reply_to'])) {
+    $threading = str_replace(strstr($value['in_reply_to'], '>'), '>', $value['in_reply_to']); // Some MUAs send more info in that header.
+  }
+  if (isset($threading) && $threading = rtrim(ltrim($threading, '<'), '>')) { //strip angle brackets
+    if ($threading) {
+      $node->threading = $threading;
+    }
+    parse_str($threading, $tmp);
+    if ($tmp['host']) {
+      $tmp['host'] = ltrim($tmp['host'], '@'); // strip unnecessary @ from 'host' element
+    }
+    foreach ($tmp as $key => $val) {
+      $node->$key = $val;
+    }
+  }
 }
 
 
