@@ -34,9 +34,16 @@ class MailhandlerCommandsDefault {
   /**
    * Parse and process commands
    */
-  function process($item, &$node) {
-    watchdog('commands', 'processing commands');
-  }
+   function process($item, &$node) {
+     watchdog('commands', 'processing commands');
+     // TODO: need to handle the special case of making 'status' set correctly for comments
+     // Important: should be unset in case of type = comment so that commands can then explicitly set
+     // the status in case of comments.
+     //     if ($node->type == 'comment') {
+     //       // 'status' for nodes and comments are backwards.  This makes the permission system handle it.
+     //       unset($node->status);
+     //     }
+     }
   
 
 }

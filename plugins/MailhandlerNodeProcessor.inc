@@ -1,8 +1,12 @@
 <?php
 
+// Create or delete MAILHANDLER_NODE_BATCH_SIZE at a time.
+define('MAILHANDLER_NODE_BATCH_SIZE', 50);
+
 class MailhandlerNodeProcessor extends FeedsProcessor {
 
   public function process(FeedsImportBatch $batch, FeedsSource $source) {
+    $processed = $comments = $new_nodes = $updated_nodes = 0;
     while ($item = $batch->shiftItem()) {
       $node = new stdClass();
       $node->type = $this->config['content_type'];
@@ -36,13 +40,15 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         }
       }
       if ($node->type == 'comment') {
-        // 'status' for nodes and comments are backwards.  This makes the permission system handle it.
-        unset($node->status);
-        $object = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody']);
+        if ($object = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody'])) {
+          $comments++;
+        }
         $type = 'comment';
       }
       else {
-        $object = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody']);
+        if ($object = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody'])) {
+          $node->is_new ? $new_nodes++ : $updated_nodes++;
+        }
         $type = 'node';
       }
       // Invoke a second hook for modules to operate on the newly created/edited node/comment.
@@ -53,8 +59,24 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
           $function($object, $type);
         }
       }
+      $processed++;
+      if ($processed >= variable_get('mailhandler_node_batch_size', MAILHANDLER_NODE_BATCH_SIZE)) {
+        return (1.0 / ($batch->total + 1)) * ($comments + $new_nodes + $updated_nodes); // Add + 1 to make sure that result is not 1.0 = finished.
+      }
     }
-    // TODO: review this.  Handle counting.
+    // Set messages.
+    if ($comments) {
+      drupal_set_message(t('Created !number comments.', array('!number' => $comments)));
+    }
+    elseif ($updated_nodes) {
+      drupal_set_message(t('Updated !number nodes.', array('!number' => $updated_nodes)));
+    }
+    elseif ($new_nodes) {
+      drupal_set_message(t('Created !number nodes.', array('!number' => $new_nodes)));
+    }
+    else {
+      drupal_set_message(t('No content created nor updated.'));
+    }
     return FEEDS_BATCH_COMPLETE;
   }
 
@@ -110,12 +132,13 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitComment($node, $header, $mailbox, $origbody) {
     global $user;
-    if (!$node->subject) $node->subject = $node->title;
-    // When submitting comments, 'comment' means actualy the comment's body, and not the comments status for a node.
-    // We need to reset the comment's body, so it doesn't colide with a default 'comment' command.
+    if (!$node->subject) {
+      $node->subject = $node->title;
+    }
+    // 'comment' is the 'body' on comments.  Make it so.
     $node->comment = $node->body;
-    // comment_save will not fall back to permission system if we set the status explicitly
-    // See comment_save.  += will not overwrite an existing array property.
+    // Only do this if status is set in the first place so that we fall back on permission system.
+    // This depends on status being properly handled by command processor
     if (property_exists($node, 'status')) {
       // In comment module, status of 1 means unpublished, status of 0 means published.
       $node->status == 1 ? $node->status = 0 : $node->status = 1;
