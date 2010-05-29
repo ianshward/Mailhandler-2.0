@@ -54,7 +54,6 @@ class MailhandlerParser extends FeedsParser {
    * This defines sources which user's can select to map values to.
    */
   public function getMappingSources() {
-    // TODO: define the rest of the elements that IMAP PHP provides
     $sources = array(
       'title' => array(
         'name' => t('Subject'),

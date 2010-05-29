@@ -308,7 +308,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
 function _mailhandler_node_processor_target_body($node, $target, $value) {
   // TODO: strip the commands and signature, and what's left is the body.
-  // But, where should commands actually be run?
   $node->$target = $value;
   
 }
