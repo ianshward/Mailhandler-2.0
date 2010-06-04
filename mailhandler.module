@@ -119,7 +119,7 @@ function mailhandler_get_fromaddress($header, $mailbox) {
   else {
     $from = $header->from;
   }
-  return array($from[0]->mailbox .'@'. $from[0]->host, $from[0]->personal);
+  return array($from[0]->mailbox .'@'. $from[0]->host, (isset($from[0]->personal)) ? $from[0]->personal : '');
 }
 
 /**
