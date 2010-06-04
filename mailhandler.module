@@ -15,7 +15,7 @@ function mailhandler_perm() {
 function mailhandler_menu() {
   $items = array();
   $items['admin/content/mailhandler'] = array(
-    'title' => t('Mailhandler Mailboxes'),
+    'title' => 'Mailhandler Mailboxes',
     'description' => t('Manage mailboxes'),
     'page callback' => 'mailhandler_operations_view',
     'access arguments' => array('administer mailhandler'),
@@ -30,7 +30,7 @@ function mailhandler_menu() {
     'weight' => -1,
   );
   $items['admin/content/mailhandler/add'] = array(
-    'title' => t('Add mailbox'),
+    'title' => 'Add mailbox',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mailhandler_add_edit_mailbox', NULL),
     'access arguments' => array('administer mailhandler'),
@@ -38,7 +38,7 @@ function mailhandler_menu() {
     'file' => 'mailhandler.admin.inc',
   );
   $items['admin/content/mailhandler/clone/%'] = array(
-    'title' => t('Add mailbox'),
+    'title' => 'Add mailbox',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mailhandler_add_edit_mailbox', 4, TRUE),
     'access arguments' => array('administer mailhandler'),
@@ -46,7 +46,7 @@ function mailhandler_menu() {
     'file' => 'mailhandler.admin.inc',
   );
   $items['admin/content/mailhandler/retrieve/%mailhandler_mailbox'] = array(
-    'title' => t('Retrieve'),
+    'title' => 'Retrieve',
     'page callback' => 'mailhandler_node_process_mailbox',
     // Cast variable as string so menu system does not mistake it for a path argument
     'page arguments' => array(4, 'ui', (string) variable_get('mailhandler_max_retrieval', 0)),
@@ -55,7 +55,7 @@ function mailhandler_menu() {
     'file' => 'mailhandler.retrieve.inc',
   );
   $items['admin/content/mailhandler/delete/%'] = array(
-    'title' => t('Delete mailbox'),
+    'title' => 'Delete mailbox',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mailhandler_admin_delete_confirm', 4),
     'access arguments' => array('administer mailhandler'),
