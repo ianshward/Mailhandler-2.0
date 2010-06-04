@@ -28,7 +28,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         module_load_include('inc', 'node', 'node.pages');
         $included = TRUE;
       }
-      node_object_prepare($node);
+      _mailhandler_node_object_prepare($node);
       // Modules may override node elements before submitting. they do so by returning the node.
       foreach (module_list() as $name) {
         if (module_hook($name, 'mailhandler')) {
@@ -179,7 +179,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Override setTargetElement to operate on a target item that is a node.
    */
   public function setTargetElement($target_node, $target_element, $value) {
-    if (in_array($target_element, array('status', 'created', 'type', 'size', 'origbody'))) {
+    if (in_array($target_element, array('status', 'type', 'size', 'origbody'))) {
       $target_node->$target_element = $value;
     }
   }
@@ -307,9 +307,22 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
  */
 
 function _mailhandler_node_processor_target_body($node, $target, $value) {
-  // TODO: strip the commands and signature, and what's left is the body.
-  $node->$target = $value;
-  
+  $lines = explode("\n", $value);
+  for ($i = 0; $i < count($lines); $i++) {
+    $line = trim($lines[$i]);
+    $words = explode(' ', $line);
+    // Look for a command line. if not present, note which line number is the boundary
+    if (substr($words[0], -1) == ':' && !isset($endcommands)) {
+      continue;
+    }
+    else {
+      if (!isset($endcommands)) $endcommands = $i;
+    }
+  }
+  $tmp = array_slice($lines, $endcommands, $i - $endcommands);
+  $body = implode("\n", $tmp);
+  // TODO: handle stripping sig, except we don't know the sig delimiter in this scope.
+  $node->$target = $body;
 }
 
 function _mailhandler_node_processor_target_title($node, $target, $value) {
@@ -330,11 +343,13 @@ function _mailhandler_node_processor_target_title($node, $target, $value) {
 }
 
 function _mailhandler_node_processor_target_created($node, $target, $value) {
-  // TODO
+  $date = strtotime($value);
+  $node->$target = $date;
+  $node->changed = $date;
 }
 
 function _mailhandler_node_processor_target_teaser($node, $target, $value) {
-  // TODO
+  $node->$target = node_teaser($node->body);
 }
 
 function _mailhandler_node_processor_target_threading($node, $target, $value) {
@@ -360,4 +375,34 @@ function _mailhandler_node_processor_target_threading($node, $target, $value) {
   }
 }
 
+/**
+ * Prepare the node
+ * 
+ * Basically a copy of node_object_prepare but does not set the user nor
+ * overwrite values if already set.
+ * 
+ * @param object $node
+ */
+function _mailhandler_node_object_prepare(&$node) {
+  // Set up default values, if required.
+  $node_options = variable_get('node_options_'. $node->type, array('status', 'promote'));
+  // If this is a new node, fill in the default values.
+  if (!isset($node->nid)) {
+    foreach (array('status', 'promote', 'sticky') as $key) {
+      if (!isset($node->$key)) {
+        $node->$key = in_array($key, $node_options);
+      }
+    }
+  }
+  else {
+    $node->date = format_date($node->created, 'custom', 'Y-m-d H:i:s O');
+    // Remove the log message from the original node object.
+    $node->log = NULL;
+  }
+  // Always use the default revision setting.
+  $node->revision = in_array('revision', $node_options);
+
+  node_invoke($node, 'prepare');
+  node_invoke_nodeapi($node, 'prepare');
+}
 
