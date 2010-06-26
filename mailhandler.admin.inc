@@ -145,7 +145,7 @@ function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
   );
   ctools_include('plugins');
   $options = array();
-  $plugins = ctools_get_plugins('mailhandler', 'commands');
+  $plugins = mailhandler_get_plugins('commands');
   foreach ($plugins as $key => $info) {
     $options[$key] = $info['name'];
   }
@@ -158,7 +158,7 @@ function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
     '#default_value' => $edit->commandplugin,
   );
   $options = array(); //$options[0] = t('None');
-  $plugins = ctools_get_plugins('mailhandler', 'authenticate');
+  $plugins = mailhandler_get_plugins('authenticate');
   foreach ($plugins as $key => $info) {
     $options[$key] = $info['name'];
   }

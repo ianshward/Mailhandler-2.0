@@ -322,6 +322,9 @@ function _mailhandler_node_processor_target_body($node, $target, $value) {
   $tmp = array_slice($lines, $endcommands, $i - $endcommands);
   $body = implode("\n", $tmp);
   // TODO: handle stripping sig, except we don't know the sig delimiter in this scope.
+  // Idea to let user define what their sig separater is and use that based on who
+  // the mail is from.  Again, don't have needed info in this scope.
+  // To deal w/ scope issues, could stuff something onto $node->mailhandler.
   $node->$target = $body;
 }
 

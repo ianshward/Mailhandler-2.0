@@ -15,7 +15,7 @@
  *   A rough search allows for different approaches to use this single authentication method.
  *   
  */
-class MailhandlerAuthenticateTokenauth {
+class MailhandlerAuthenticateTokenauth extends MailhandlerAuthenticate {
   
   public function authenticate($item, &$node) {
     if (module_exists('tokenauth')) {

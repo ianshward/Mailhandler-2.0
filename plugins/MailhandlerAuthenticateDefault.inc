@@ -1,6 +1,6 @@
 <?php
   
-class MailhandlerAuthenticateDefault {
+class MailhandlerAuthenticateDefault extends MailhandlerAuthenticate {
   
   public function authenticate($item, &$node) {
     list($fromaddress, $fromname) = mailhandler_get_fromaddress($item['header'], $item['mailbox']);

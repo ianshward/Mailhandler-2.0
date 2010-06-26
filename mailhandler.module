@@ -357,6 +357,14 @@ function mailhandler_mailhandler_mailbox() {
 // TODO: make abstract classes for these plugin types
 function mailhandler_mailhandler_authenticate() {
   $plugins = array();
+  $plugins['MailhandlerAuthenticate'] = array(
+    'hidden' => TRUE,
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
+      'file' => 'MailhandlerAuthenticate.inc',
+      'class' => 'MailhandlerAuthenticate', 
+    ),
+  );
   $plugins['MailhandlerAuthenticateDefault'] = array(
     'name' => 'Mailhandler default authentication',
     'description' => 'Authenticate messages based on "from" email address',
@@ -364,7 +372,7 @@ function mailhandler_mailhandler_authenticate() {
       'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
       'file' => 'MailhandlerAuthenticateDefault.inc',
       'class' => 'MailhandlerAuthenticateDefault',
-      # 'parent' => '',
+      'parent' => 'MailhandlerAuthenticate',
     ),
   );
   $plugins['MailhandlerAuthenticateTokenauth'] = array(
@@ -374,7 +382,7 @@ function mailhandler_mailhandler_authenticate() {
       'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
       'file' => 'MailhandlerAuthenticateTokenauth.inc',
       'class' => 'MailhandlerAuthenticateTokenauth',
-      # 'parent' => '',
+      'parent' => 'MailhandlerAuthenticate',
     ),
   );
   return $plugins;
@@ -382,6 +390,14 @@ function mailhandler_mailhandler_authenticate() {
 
 function mailhandler_mailhandler_commands() {
   $plugins = array();
+  $plugins['MailhandlerCommands'] = array(
+    'hidden' => TRUE,
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
+      'file' => 'MailhandlerCommands.inc',
+      'class' => 'MailhandlerCommands', 
+    ),
+  );
   $plugins['MailhandlerCommandsDefault'] = array(
     'name' => 'Mailhandler default commands',
     'description' => 'Default Mailhandler command parser and processor',
@@ -389,7 +405,7 @@ function mailhandler_mailhandler_commands() {
       'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
       'file' => 'MailhandlerCommandsDefault.inc',
       'class' => 'MailhandlerCommandsDefault',
-      # 'parent' => '',
+      'parent' => 'MailhandlerCommands',
     ),
   );
   return $plugins;
@@ -442,5 +458,24 @@ function mailhandler_plugin_load_class($plugin, $type, $id, $args = NULL) {
     return new $class($args);
   }
   // TODO: handle case where plugin is unable to load.
+}
+
+/**
+ * 
+ * 
+ * @param $type
+ *   String - type of mailhandler plugins to retrieve.
+ */
+function mailhandler_get_plugins($type) {
+  ctools_include('plugins');
+  $plugins = ctools_get_plugins('mailhandler', $type);
+  $result = array();
+  foreach ($plugins as $key => $info) {
+    if (!empty($info['hidden'])) {
+      continue;
+    }
+    $result[$key] = $info;
+  }
+  return $result;
 }
 
