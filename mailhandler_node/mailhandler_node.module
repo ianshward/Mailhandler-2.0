@@ -1,0 +1,115 @@
+<?php 
+
+/**
+ * Implementation of hook_ctools_plugin_api()
+ */
+function mailhandler_node_ctools_plugin_api($module, $api) {
+  if ($module == 'mailhandler_node' && $api == 'authenticate_plugin') {
+    return array(
+      'version' => 1
+    );
+  }
+  elseif ($module == 'mailhandler_node' && $api == 'commands_plugin') {
+    return array(
+      'version' => 1
+    );
+  }
+  elseif ($module == 'mailhandler' && $api == 'mailbox_plugin') {
+    return array(
+      'version' => 1
+    );
+  }
+}
+
+function mailhandler_node_mailhandler_node_authenticate_plugin() {
+  $plugins = array();
+  $plugins['MailhandlerNodeAuthenticate'] = array(
+    'hidden' => TRUE,
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeAuthenticate.inc',
+      'class' => 'MailhandlerNodeAuthenticate', 
+    ),
+  );
+  $plugins['MailhandlerNodeAuthenticateDefault'] = array(
+    'name' => 'Mailhandler node default authentication',
+    'description' => 'Authenticate messages based on "from" email address',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeAuthenticateDefault.inc',
+      'class' => 'MailhandlerNodeAuthenticateDefault',
+      'parent' => 'MailhandlerNodeAuthenticate',
+    ),
+  );
+  $plugins['MailhandlerNodeAuthenticateTokenauth'] = array(
+    'name' => 'Mailhandler Node Tokenauth authentication',
+    'description' => 'Authenticate messages based on tokens from Tokenauth',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeAuthenticateTokenauth.inc',
+      'class' => 'MailhandlerNodeAuthenticateTokenauth',
+      'parent' => 'MailhandlerNodeAuthenticate',
+    ),
+  );
+  return $plugins;
+}
+
+function mailhandler_node_mailhandler_node_commands_plugin() {
+  $plugins = array();
+  $plugins['MailhandlerNodeCommands'] = array(
+    'hidden' => TRUE,
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeCommands.inc',
+      'class' => 'MailhandlerNodeCommands', 
+    ),
+  );
+  $plugins['MailhandlerNodeCommandsDefault'] = array(
+    'name' => 'Mailhandler node default commands',
+    'description' => 'Default Mailhandler command parser and processor for nodes',
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeCommandsDefault.inc',
+      'class' => 'MailhandlerNodeCommandsDefault',
+      'parent' => 'MailhandlerNodeCommands',
+    ),
+  );
+  return $plugins;
+}
+
+function mailhandler_node_mailhandler_mailbox_plugin() {
+    $plugins['MailhandlerNodeMailbox'] = array(
+    'handler' => array(
+      'path' => drupal_get_path('module', 'mailhandler_node') .'/plugins',
+      'file' => 'MailhandlerNodeMailbox.inc',
+      'class' => 'MailhandlerNodeMailbox',
+      'parent' => 'MailhandlerMailbox',
+    ),
+  );
+  return $plugins;
+}
+
+function mailhandler_node_feeds_plugins() {
+  $info = array();
+  $info['MailhandlerNodeProcessor'] = array(
+    'name' => 'Mailhandler Node Processor',
+    'description' => 'Create nodes from an IMAP/POP result set.',
+    'handler' => array(
+      'parent' => 'FeedsProcessor', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'MailhandlerNodeProcessor',
+      'file' => 'MailhandlerNodeProcessor.inc',
+      'path' => drupal_get_path('module', 'mailhandler_node') . '/plugins',
+    ),
+  );
+  $info['MailhandlerNodeParser'] = array(
+    'name' => 'Mailhandler node parser',
+    'description' => 'Parses an IMAP stream, node-centric.',
+    'handler' => array(
+      'parent' => 'FeedsParser', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'MailhandlerNodeParser',
+      'file' => 'MailhandlerNodeParser.inc',
+      'path' => drupal_get_path('module', 'mailhandler_node') . '/plugins',
+    ),
+  );
+  return $info;
+}

@@ -22,139 +22,24 @@ function mailhandler_uninstall() {
   $schema['mailhandler'] = array(
     'description' => t('Mailhandler table'),
     'fields' => array(
-      'mid' => array(
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'disp-width' => '10',
-      ),
       'mail' => array(
         'type' => 'varchar',
         'length' => '255',
         'not null' => TRUE,
       ),
-      'domain' => array(
+      'mailbox_type' => array(
         'type' => 'varchar',
         'length' => '255',
         'not null' => TRUE,
       ),
-      'port' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'disp-width' => '5',
-      ),
-      'name' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-      ),
-      'pass' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-      ),
-      'security' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'tiny',
-        'not null' => TRUE,
-      ),
-      'replies' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'default' => 1,
-      ),
-      'fromheader' => array(
-        'type' => 'varchar',
-        'length' => '128',
-        'not null' => FALSE,
-      ),
-      'commands' => array(
+      'settings' => array(
         'type' => 'text',
         'not null' => FALSE,
-      ),
-      'sigseparator' => array(
-        'type' => 'varchar',
-        'length' => '128',
-        'not null' => FALSE,
-      ),
-      'enabled' => array(
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => FALSE,
-      ),
-      'folder' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-      ),
-      'imap' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'tiny',
-        'not null' => TRUE,
-      ),
-      'mime' => array(
-        'type' => 'varchar',
-        'length' => '128',
-        'not null' => FALSE,
-      ),
-      'mailto' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-      ),
-      'delete_after_read' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'default' => 1,
-      ),
-      'extraimap' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-      ),
-      'format' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'authenticateplugin' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'default' => 'MailhandlerAuthenticateDefault',
-      ),
-      'max' => array(
-        'type' => 'int',
-        'length' => '10',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'encoding' => array(
-        'type' => 'varchar',
-        'length' => '32',
-        'not null' => TRUE,
-        'default' => 'UTF-8',
-      ),
-      'commandplugin' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'default' => 'MailhandlerCommandsDefault',
+        'description' => 'Configuration of mailhandler mailbox.',
         'serialize' => TRUE,
       ),
     ),
-    'primary key' => array('mid'),
-    'indexes' => array(
-      'mail' => array('mail'),
-      ),
+    'primary key' => array('mail'),
     'export' => array(
       'key' => 'mail',
       'identifier' => 'mailbox',

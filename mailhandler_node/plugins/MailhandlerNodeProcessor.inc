@@ -252,7 +252,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function commands($item, &$node) {
     if (($plugins = $item['mailbox']['commandplugin']) && !empty($plugins)) {
       foreach ($plugins as $plugin) {
-        if ($class = mailhandler_plugin_load_class($plugin, 'commands', 'handler')) {
+        if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'commands', 'handler')) {
           $class->parse($item, &$node);
           $class->process($item, &$node); 
         }
@@ -266,7 +266,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function authenticate($item, &$node) {
     // TODO: allow for multiple authenticate plugins to be weighted and implemented.
     if (($plugin = $item['mailbox']['authenticateplugin'])) {
-      if ($class = mailhandler_plugin_load_class($plugin, 'authenticate', 'handler')) {
+      if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'authenticate', 'handler')) {
         $class->authenticate($item, &$node);
       }
     }

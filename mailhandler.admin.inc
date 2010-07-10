@@ -2,274 +2,117 @@
 
 /**
  * Return a form for editing or creating an individual mailbox.
+ * 
+ * I blame this ugliness on lack of late static bindings in PHP < 5.3.
+ * Could and should be refactored.
+ * 
  */
-function mailhandler_add_edit_mailbox($form_state, $mailbox, $clone = FALSE) {
+function mailhandler_mailbox_form($form_state, $mailbox, $clone = FALSE) {
   module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-  $edit = $mailbox ? mailhandler_mailboxes_load($mailbox) : mailhandler_mailboxes_load('', TRUE);
-  if ($clone) {
-    unset($mid);
+  $form = $subform = array();
+  // Prepare default values
+  $settings = $mailbox->settings;
+  $base_defaults = $settings['MailhandlerMailbox'];
+  $defaults = $settings[get_class($mailbox)];
+  // Fetch basic mailhandler settings form
+  $form['MailhandlerMailbox'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Basic mailbox settings'),
+    '#tree' => TRUE,
+  );
+  $form += MailhandlerMailbox::baseForm($form_state, $base_defaults);
+  foreach ($form as $key => $value) {
+    if ($key != 'actions' && $key != 'MailhandlerMailbox') {
+      $form['MailhandlerMailbox'][$key] = $value;
+      unset($form[$key]);
+    }
   }
-  // TODO this should be removed, taken care of in constructor
-  if (empty($edit->folder)) {
-    $edit->folder = 'INBOX';
+  $mailbox_info = $mailbox->getInfo();
+  // Pass in mailbox object to use in _validate
+  $form['#mailbox'] = $mailbox;
+  // Load in sub form based on mailbox type.
+  $class = get_class($mailbox);
+  $subform += $mailbox->form($form_state, $defaults);
+  $subform[$class] = array(
+    '#type' => 'fieldset',
+    '#title' => t($mailbox_info['title']),
+    '#tree' => TRUE,
+  );
+  foreach ($subform as $key => $values) {
+    if ($key != $class) {
+      $subform[$class][$key] = $values;
+      unset($subform[$key]);
+    }
   }
-
-  $form['mail'] = array(
-    '#type' => 'textfield',
-    '#title' => t('E-mail address'),
-    '#default_value' => $edit->mail,
-    '#description' => t('The e-mail address to which users should send their submissions.'),
-    '#required' => TRUE,
-  );
-
-  $form['mailto'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Second E-mail address'),
-    '#default_value' => $edit->mailto,
-    '#description' => t('Optional. The e-mail address to which modules should send generated content.'),
-  );
-
-  $form['folder'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Folder'),
-    '#default_value' => $edit->folder,
-    '#description' => t('Optional. The folder where the mail is stored. If you want this mailbox to read from a local folder, give the full path. Leave domain, port, name, and pass empty below. Remember to set the folder to readable and writable by the webserver.'),
-  );
-
-  $form['imap'] = array(
-    '#type' => 'select',
-    '#title' => t('POP3 or IMAP Mailbox'),
-    '#options' => array('POP3', 'IMAP'),
-    '#default_value' => $edit->imap,
-    '#description' => t('If you wish to retrieve mail from a POP3 or IMAP mailbox instead of a Folder, select POP3 or IMAP. Also, complete the Mailbox items below.'),
-  );
-
-  $form['domain'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Mailbox domain'),
-    '#default_value' => $edit->domain,
-    '#description' => t('The domain of the server used to collect mail.'),
-  );
-
-  $form['port'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Mailbox port'),
-    '#size' => 5, '#maxlength' => 5,
-    '#default_value' => $edit->port,
-    '#description' => t('The port of the mailbox used to collect mail (usually 110 for POP3, 143 for IMAP).'),
-  );
-
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Mailbox username'),
-    '#default_value' => $edit->name,
-    '#description' => t('This username is used while logging into this mailbox during mail retrieval.'),
-  );
-
-  $form['pass'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Mailbox password'),
-    '#default_value' => $edit->pass,
-    '#description' => t('The password corresponding to the username above. Consider using a non-vital password, since this field is stored without encryption in the database.'),
-  );
-
-  // Allow administrators to configure the mailbox with extra IMAP commands (notls, novalidate-cert etc.)
-  $form['extraimap'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Extra commands'),
-    '#default_value' => $edit->extraimap,
-    '#description' => t('Optional. In some circumstances you need to issue extra commands to connect to your mail server (e.g. "/notls", "/novalidate-cert" etc.). See documentation for <a href="http://php.net/imap_open">imap_open</a>. Begin the string with a "/", separating each subsequent command with another "/".'),
-  );
-
-  $form['mime'] = array(
-    '#type' => 'select',
-    '#title' => t('MIME preference'),
-    '#options' => array(
-      'TEXT/HTML,TEXT/PLAIN' => 'HTML',
-      'TEXT/PLAIN,TEXT/HTML' => t('Plain text'),
-    ),
-    '#default_value' => $edit->mime,
-    '#description' => t('When a user sends an e-mail containing both HTML and plain text parts, use this part as the node body.'),
-  );
-
-  $form['security'] = array(
-    '#type' => 'radios',
-    '#title' => t('Security'),
-    '#options' => array(t('Disabled'), t('Require password')),
-    '#default_value' => isset($edit->security) ? $edit->security : 0,
-    '#description' => t('Disable security if your site does not require a password in the Commands section of incoming e-mails. Note: Security=Enabled and MIME preference=HTML is an unsupported combination.')
-  );
-
-  $form['replies'] = array(
-    '#type' => 'radios', 
-    '#title' => t('Send error replies'), 
-    '#options' => array(t('Disabled'), t('Enabled')), 
-    '#default_value' => $edit->replies,
-    '#description' => t('Send helpful replies to all unsuccessful e-mail submissions. Consider disabling when a listserv posts to this mailbox.'));
-
-  $form['fromheader'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('From header'), 
-    '#default_value' => $edit->fromheader,
-    '#description' => t('Use this e-mail header to determine the author of the resulting node. Admins usually leave this field blank (thus using the <strong>From</strong> header), but <strong>Sender</strong> is also useful when working with listservs.'));
-
-  $form['sigseparator'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Signature separator'), 
-    '#default_value' => $edit->sigseparator, 
-    '#description' => t('All text after this string will be discarded. A typical value is <strong>"-- "</strong> that is two dashes followed by a blank in an otherwise empty line. Leave blank to include signature text in nodes.'));
-
-  $form['delete_after_read'] = array(
-    '#type' => 'checkbox', 
-    '#title' => t('Delete messages after they are processed?'), 
-    '#default_value' => $edit->delete_after_read, 
-    '#description' => t('Uncheck this box to leave read messages in the mailbox. They will not be processed again unless they become marked as unread.  If you selected "POP3" as your mailbox type, you must check this box.'));
-
-  $form['commands'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Default commands'),
-    '#description' => t('A set of commands which are added to each message.'),
-    '#default_value' => $edit->commands,
-  );
-  $form['encoding'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default character encoding'),
-    '#default_value' => $edit->encoding,
-    '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
-  );
-  $form['max'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Maximum messages to retrieve'),
-    '#default_value' => $edit->limit,
-    '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
-  );
-  ctools_include('plugins');
-  $options = array();
-  $plugins = mailhandler_get_plugins('commands');
-  foreach ($plugins as $key => $info) {
-    $options[$key] = $info['name'];
-  }
-  $form['commandplugin'] = array(
-    '#type' => 'select',
-    '#title' => t('Command plugins'),
-    '#description' => t('Choose the command plugins to use'),
-    '#options' => $options,
-    '#multiple' => TRUE,
-    '#default_value' => $edit->commandplugin,
-  );
-  $options = array(); //$options[0] = t('None');
-  $plugins = mailhandler_get_plugins('authenticate');
-  foreach ($plugins as $key => $info) {
-    $options[$key] = $info['name'];
-  }
-  $form['authenticateplugin'] = array(
-    '#type' => 'select',
-    '#title' => t('Authentication plugin'),
-    '#description' => t('Choose an authentication plugin'),
-    '#options' => $options,
-    '#default_value' => $edit->authenticateplugin,
-    '#required' => FALSE,
-  );
-  // Allow administrators to select the format of saved nodes/comments
-  $form['format'] = filter_form($edit->format);
-  
-  $form['actions'] = array('#prefix' => '<p><div class="confirmation container-inline">', '#suffix' => '</div></p>');
-
-  $form['mid'] = array(
-    '#type' => 'hidden',
-    '#value' => $mid,
-  );
-
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save mailbox'),
-  );
-
-  $form['actions']['test'] = array(
-    '#type' => 'submit',
-    '#value' => t('Test connection'),
-  );
-
-  if ($mid) {
-    $form['actions']['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete mailbox'),
-      '#submit' => array('mailhandler_delete_mailbox_submit'),
-      '#validate' => array(),
-    );
-  }
-
-  $form['actions']['cancel'] = array(
-    '#value' => l(t('Cancel'), 'admin/content/mailhandler'),
-  );
-
+  $form += $subform;
   return $form;
 }
-
 
 /**
  * Verify that the Mailbox is valid, and save it to the database.
  */
-function mailhandler_add_edit_mailbox_validate($form, &$form_state) {
-
-  // Check for valid email address
-  if ($error = user_validate_mail($form_state['values']['mail'])) {
-    form_set_error('mail', $error);
-  }
-
-  if ($form_state['values']['mailto'] && ($error = user_validate_mail($form_state['values']['mailto']))) {
-    form_set_error('mailto', $error);
-  }
-
-  // Test POP/IMAP settings, and store result
-  $mailbox_appears_ok = TRUE;
-
-  if ($form_state['values']['domain'] && $form_state['values']['port'] && !is_numeric($form_state['values']['port'])) { // assume external mailbox
-    form_set_error('port', t('Mailbox port must be an integer.'));
-    $mailbox_appears_ok = FALSE;
-  }
-
-  if (!$form_state['values']['domain'] && !$form_state['values']['port'] && $form_state['values']['folder']) { // assume local folder
-    // check read and write permission
-    if (!is_readable($form_state['values']['folder']) || !is_writable($form_state['values']['folder'])) {
-      form_set_error('port', t('The local folder has to be readable and writable by owner of the webserver process, e.g. nobody.'));
-      $mailbox_appears_ok = FALSE;
-    }
-  }
-
-  // Test POP/IMAP settings are valid in all cases, and test connection if requested
-  if ($mailbox_appears_ok && $form_state['clicked_button']['#value'] == t('Test connection')) {
-    // Call the test function
-    mailhandler_test_mailbox($form_state);
-
-    // We don't want to save, so we set an 'invisible error' that means the form is not submitted
-    form_set_error('mailhandler');
-  }
-  
-  // If POP3 mailbox is chosen, messages must be deleted after processing.
-  if ($form_state['values']['imap'] == 0 && $form_state['values']['delete_after_read'] == 0) {
-    form_set_error('delete_after_read', t('You must check off "Delete messages after they are processed" when using a POP3 mailbox.'));
-  }
-
+function mailhandler_mailbox_form_validate($form, &$form_state) {
+  // Validate the base form
+  MailhandlerMailbox::baseFormValidate($form, $form_state);
+  // Then, validate the subform
+  $form['#mailbox']->validate($form, $form_state);
 }
-
 
 /**
  * Save a mailbox to the database - determine whether adding or editing by checking for a mailbox id (mid)
  */
-function mailhandler_add_edit_mailbox_submit($form, &$form_state) {
-  if ($form_state['values']['mid']) {
-    drupal_write_record('mailhandler', $form_state['values'], $form_state['values']['mid']);
-    drupal_set_message(t('Mailbox %mailbox updated.', array('%mailbox' => $form_state['values']['mail'])));
+function mailhandler_mailbox_form_submit($form, &$form_state) {
+  // Prepare values for submission.  Check which modules 
+  $settings = array();
+  $settings['mail'] = $form_state['values']['MailhandlerMailbox']['mail'];
+  $settings['mailbox_type'] = $form_state['values']['MailhandlerMailbox']['mailbox_type'];
+  
+  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
+  foreach ($plugins as $plugin) {
+    if (array_key_exists($plugin['name'], $form_state['values'])) {
+      $settings['settings'][$plugin['name']] = $form_state['values'][$plugin['name']];
+    }
+  }
+  if ($form_state['values']['mailbox']) {
+    drupal_write_record('mailhandler', $settings, 'mail');
+    drupal_set_message(t('Mailbox %mailbox updated.', array('%mailbox' => $form_state['values']['mailhandler']['mail'])));
   }
   else {
-    drupal_write_record('mailhandler', $form_state['values']);    
-    drupal_set_message(t('Mailbox %mailbox added.', array('%mailbox' => $form_state['values']['mail'])));
+    drupal_write_record('mailhandler', $settings);    
+    drupal_set_message(t('Mailbox %mailbox added.', array('%mailbox' => $form_state['values']['mailhandler']['mail'])));
   }
   $form_state['redirect'] = 'admin/content/mailhandler';
   return;
 }
 
+
+function mailhandler_add_new_mailbox($form_state) {
+  $form = array();
+  // Load all plugins of mailbox_plugin type, provide as options
+  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
+  $mailbox_types = array();
+  foreach ($plugins as $plugin) {
+    $object = FALSE;
+    $object = mailhandler_plugin_load_class('mailhandler', $plugin['name'], 'mailbox_plugin', 'handler');
+    $info = $object->getInfo();
+    $mailbox_types[$plugin['name']] = $info['title'] . '<div class="description">' . $info['description'] . '</div>';
+  }
+  $form['mailbox_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Choose a mailbox type'),
+    '#description' => '',
+    '#options' => $mailbox_types,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Continue'),
+  );
+  return $form;
+}
+
+function mailhandler_add_new_mailbox_submit($form, &$form_state) {
+  $form_state['redirect'] = 'admin/content/mailhandler/add/' . $form_state['values']['mailbox_type'];
+}
 
 /**
  *  Submit handler for mailbox delete button
@@ -278,7 +121,6 @@ function mailhandler_add_edit_mailbox_submit($form, &$form_state) {
 function mailhandler_delete_mailbox_submit($form, &$form_state) {
   $form_state['redirect'] = array('admin/content/mailhandler/delete/'.$form_state['values']['mid']);
 }
-
 
 /**
  * Confirm/Delete Mailbox
