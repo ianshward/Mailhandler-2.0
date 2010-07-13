@@ -3,48 +3,33 @@
 /**
  * Return a form for editing or creating an individual mailbox.
  * 
- * I blame this ugliness on lack of late static bindings in PHP < 5.3.
- * Could and should be refactored.
- * 
+ * This design was somewhat influenced by the lack of late static bindings in
+ * PHP < 5.3
  */
-function mailhandler_mailbox_form($form_state, $mailbox, $clone = FALSE) {
+function mailhandler_mailbox_form($form_state, $op, $mail, $type = 'MailhandlerMailbox') {
   module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
-  $form = $subform = array();
-  // Prepare default values
-  $settings = $mailbox->settings;
-  $base_defaults = $settings['MailhandlerMailbox'];
-  $defaults = $settings[get_class($mailbox)];
-  // Fetch basic mailhandler settings form
-  $form['MailhandlerMailbox'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Basic mailbox settings'),
-    '#tree' => TRUE,
+  $form = array(
+    '#theme' => 'mailhandler_mailbox_form',
+    '#mailhandler_op' => $op,
+    '#mailhandler_mail' => $mail,
+    '#mailhandler_class' => $type,
   );
-  $form += MailhandlerMailbox::baseForm($form_state, $base_defaults);
-  foreach ($form as $key => $value) {
-    if ($key != 'actions' && $key != 'MailhandlerMailbox') {
-      $form['MailhandlerMailbox'][$key] = $value;
-      unset($form[$key]);
-    }
+  if ($op == 'edit') {
+    // Load the object and get its type
+    $mailbox = mailhandler_mailboxes_load($mail);
+    $form['#mailhandler_mailbox'] = $mailbox;
+    $defaults = $mailbox->getDefaults();
+    $defaults = $defaults[$type];
   }
-  $mailbox_info = $mailbox->getInfo();
-  // Pass in mailbox object to use in _validate
-  $form['#mailbox'] = $mailbox;
-  // Load in sub form based on mailbox type.
-  $class = get_class($mailbox);
-  $subform += $mailbox->form($form_state, $defaults);
-  $subform[$class] = array(
-    '#type' => 'fieldset',
-    '#title' => t($mailbox_info['title']),
-    '#tree' => TRUE,
+  // Make sure the class is loaded, then call its form.
+  if ($class = mailhandler_plugin_load_class('mailhandler', $type, 'mailbox_plugin', 'handler')) {
+    $form += call_user_func_array(array($class, 'form'), array($form_state, $defaults));
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
   );
-  foreach ($subform as $key => $values) {
-    if ($key != $class) {
-      $subform[$class][$key] = $values;
-      unset($subform[$key]);
-    }
-  }
-  $form += $subform;
+  // TODO: else, fail gracefully.
   return $form;
 }
 
@@ -52,10 +37,9 @@ function mailhandler_mailbox_form($form_state, $mailbox, $clone = FALSE) {
  * Verify that the Mailbox is valid, and save it to the database.
  */
 function mailhandler_mailbox_form_validate($form, &$form_state) {
-  // Validate the base form
-  MailhandlerMailbox::baseFormValidate($form, $form_state);
-  // Then, validate the subform
-  $form['#mailbox']->validate($form, $form_state);
+  if ($class = mailhandler_plugin_load_class('mailhandler', $form['#mailhandler_class'], 'mailbox_plugin', 'handler')) {
+    call_user_func_array(array($class, 'validate'), array($form, &$form_state));
+  }
 }
 
 /**
@@ -63,23 +47,25 @@ function mailhandler_mailbox_form_validate($form, &$form_state) {
  */
 function mailhandler_mailbox_form_submit($form, &$form_state) {
   // Prepare values for submission.  Check which modules 
-  $settings = array();
-  $settings['mail'] = $form_state['values']['MailhandlerMailbox']['mail'];
-  $settings['mailbox_type'] = $form_state['values']['MailhandlerMailbox']['mailbox_type'];
-  
-  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
-  foreach ($plugins as $plugin) {
-    if (array_key_exists($plugin['name'], $form_state['values'])) {
-      $settings['settings'][$plugin['name']] = $form_state['values'][$plugin['name']];
-    }
-  }
-  if ($form_state['values']['mailbox']) {
-    drupal_write_record('mailhandler', $settings, 'mail');
-    drupal_set_message(t('Mailbox %mailbox updated.', array('%mailbox' => $form_state['values']['mailhandler']['mail'])));
+  $record = array();
+  $record['mail'] = $form['#mailhandler_mail'];
+  $record['mailbox_type'] = $form['#mailhandler_class'];
+  // Only affect the settings key which pertains to the mailbox Type being edited.
+  if ($form['#mailhandler_mailbox'] && $current = db_result(db_query("SELECT settings FROM {mailhandler} WHERE mail = '%s'", $record['mail']))) {
+    $current = unserialize($current);
+    $current[$form['#mailhandler_class']] = $form_state['values'];
+    $record['settings'] = $current;
   }
   else {
-    drupal_write_record('mailhandler', $settings);    
-    drupal_set_message(t('Mailbox %mailbox added.', array('%mailbox' => $form_state['values']['mailhandler']['mail'])));
+    $record['settings'][$form['#mailhandler_class']] = $form_state['values'];
+  }
+  if ($form['#mailhandler_mailbox']) {
+    drupal_write_record('mailhandler', $record, 'mail');
+    drupal_set_message(t('Mailbox %mailbox updated.', array('%mailbox' => $form['#mailhandler_mail'])));
+  }
+  else {
+    drupal_write_record('mailhandler', $record);    
+    drupal_set_message(t('Mailbox %mailbox added.', array('%mailbox' => $form['#mailhandler_mail'])));
   }
   $form_state['redirect'] = 'admin/content/mailhandler';
   return;
@@ -88,20 +74,10 @@ function mailhandler_mailbox_form_submit($form, &$form_state) {
 
 function mailhandler_add_new_mailbox($form_state) {
   $form = array();
-  // Load all plugins of mailbox_plugin type, provide as options
-  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
-  $mailbox_types = array();
-  foreach ($plugins as $plugin) {
-    $object = FALSE;
-    $object = mailhandler_plugin_load_class('mailhandler', $plugin['name'], 'mailbox_plugin', 'handler');
-    $info = $object->getInfo();
-    $mailbox_types[$plugin['name']] = $info['title'] . '<div class="description">' . $info['description'] . '</div>';
-  }
-  $form['mailbox_type'] = array(
-    '#type' => 'radios',
-    '#title' => t('Choose a mailbox type'),
-    '#description' => '',
-    '#options' => $mailbox_types,
+  $form['mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email address'),
+    '#description' => t('Enter email address of mailbox'),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -110,8 +86,12 @@ function mailhandler_add_new_mailbox($form_state) {
   return $form;
 }
 
+function mailhandler_add_new_mailbox_validate($form, &$form_state) {
+  // TODO: make sure is a valid email address and does not already exist.
+}
+
 function mailhandler_add_new_mailbox_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/content/mailhandler/add/' . $form_state['values']['mailbox_type'];
+  $form_state['redirect'] = 'admin/content/mailhandler/add/' . $form_state['values']['mail'];
 }
 
 /**
@@ -126,7 +106,7 @@ function mailhandler_delete_mailbox_submit($form, &$form_state) {
  * Confirm/Delete Mailbox
  */
 function mailhandler_admin_delete_confirm($form_state, $mid) {
-
+//TODO: this is broken
   $info = db_fetch_object(db_query("SELECT mid, mail FROM {mailhandler} WHERE mid = %d", $mid));
 
   $form['mid'] = array(
@@ -144,7 +124,7 @@ function mailhandler_admin_delete_confirm($form_state, $mid) {
     );
 }
 
-
+// TODO: this is broken
 function mailhandler_admin_delete_confirm_submit($form, &$form_state) {
   $info = db_fetch_object(db_query("SELECT mid, mail FROM {mailhandler} WHERE mid = %d", $form_state['values']['mid']));
   db_query("DELETE FROM {mailhandler} WHERE mid = %d", $form_state['values']['mid']);
@@ -177,4 +157,25 @@ function mailhandler_test_mailbox(&$form_state) {
   }
 
   return;
+}
+
+/**
+ * Theme function for theme('mailhandler_mailbox_form')
+ */
+function theme_mailhandler_mailbox_form($form) {
+  $output = '<div class="mailhandler-settings clear-block">';
+  $output .= '<div class="left-bar">';
+  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
+  foreach ($plugins as $plugin) {
+    $object = FALSE;
+    $object = mailhandler_plugin_load_class('mailhandler', $plugin['name'], 'mailbox_plugin', 'handler');
+    $info = $object->getInfo();
+    $output .= l(t($info['title']), 'admin/content/mailhandler/'.$form['#mailhandler_op'].'/'.$form['#mailhandler_mail'].'/'.$plugin['name']);
+  }
+  $output .= '</div>';
+  $output .= '<div class="main-bar">';
+  $output .= drupal_render($form);
+  $output .= '</div';
+  $output .= '</div>';
+  return $output;
 }

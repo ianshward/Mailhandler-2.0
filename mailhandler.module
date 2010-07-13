@@ -37,11 +37,19 @@ function mailhandler_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'mailhandler.admin.inc',
   );
-  $items['admin/content/mailhandler/add/%mailhandler_mailboxes'] = array(
+//  $items['admin/content/mailhandler/add/%mailhandler_mailboxes'] = array(
+//    'title' => 'Add mailbox',
+//    'page arguments' => array(3, 4),
+//    'load arguments' => array(TRUE),
+//    'page callback' => 'mailhandler_operations',
+//    'access arguments' => array('administer mailhandler'),
+//    'type' => MENU_LOCAL_TASK,
+//    'file' => 'mailhandler.admin.inc',
+//  );
+  $items['admin/content/mailhandler/add/%'] = array(
     'title' => 'Add mailbox',
-    'page arguments' => array(3, 4),
-    'load arguments' => array(TRUE),
-    'page callback' => 'mailhandler_operations',
+    'page arguments' => array('mailhandler_mailbox_form', 3, 4),
+    'page callback' => 'drupal_get_form',
     'access arguments' => array('administer mailhandler'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'mailhandler.admin.inc',
@@ -71,14 +79,23 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
   );
-  $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
-    'title' => 'Mailhandler',
-    'title callback' => 'mailhandler_operations_title',
-    'title arguments' => array(3, 4),
-    'description' => 'Perform mailhandler operations',
-    'page callback' =>  'mailhandler_operations',
-    'page arguments' => array(3,4),
-    //'load arguments' => array(array('name' => 4), 'names'),
+//  $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
+//    'title' => 'Mailhandler',
+//    'title callback' => 'mailhandler_operations_title',
+//    'title arguments' => array(3, 4),
+//    'description' => 'Perform mailhandler operations',
+//    'page callback' =>  'mailhandler_operations',
+//    'page arguments' => array(3,4),
+//    //'load arguments' => array(array('name' => 4), 'names'),
+//    'access arguments' => array('administer mailhandler'),
+//    'type' => MENU_CALLBACK,
+//    'file' => 'mailhandler.admin.inc',
+//  );
+// TODO: weed out unnecessary menus.
+  $items['admin/content/mailhandler/edit/%'] = array(
+    'title' => 'Edit mailbox',
+    'page arguments' => array('mailhandler_mailbox_form', 3, 4),
+    'page callback' => 'drupal_get_form',
     'access arguments' => array('administer mailhandler'),
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
@@ -229,6 +246,9 @@ function mailhandler_theme() {
   );
   $hooks['mailhandler_view_mapping_formatter'] = array(
     'arguments' => array(),
+  );
+  $hooks['mailhandler_mailbox_form'] = array(
+    'form' => array(),
   );
   return $hooks;
 }

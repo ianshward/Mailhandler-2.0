@@ -113,7 +113,7 @@ class MailhandlerNodeMailbox extends MailhandlerMailbox {
   }
   
   function validate($form, &$form_state) {
-    form_set_error('', 'Foos error.');
+    
   }
 
 }

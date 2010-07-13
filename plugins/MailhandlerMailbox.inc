@@ -32,10 +32,14 @@ class MailhandlerMailbox {
     return $this->setInfo();
   }
   
+  public function getDefaults() {
+    return $this->settings;
+  }
+  
   /**
    * Settings form
    */
-  public static function baseForm(&$form_state, $defaults) {
+  public function form(&$form_state, $defaults) {
     $form = array();
     $form['mail'] = array(
       '#type' => 'textfield',
@@ -95,32 +99,36 @@ class MailhandlerMailbox {
       '#default_value' => $defaults['extraimap'],
       '#description' => t('Optional. In some circumstances you need to issue extra commands to connect to your mail server (e.g. "/notls", "/novalidate-cert" etc.). See documentation for <a href="http://php.net/imap_open">imap_open</a>. Begin the string with a "/", separating each subsequent command with another "/".'),
     );
-    $form['actions'] = array(
-      '#prefix' => '<p><div class="confirmation container-inline">', 
-      '#suffix' => '</div></p>',
-      '#weight' => 100
-    );
-    $form['actions']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save mailbox'),
-    );
-    $form['actions']['test'] = array(
-      '#type' => 'submit',
-      '#value' => t('Test connection'),
-    );
-    if ($mid) {
-      $form['actions']['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete mailbox'),
-      '#submit' => array('mailhandler_delete_mailbox_submit'),
-      '#validate' => array(),
-      );
-    }
-    $form['actions']['cancel'] = array(
-      '#value' => l(t('Cancel'), 'admin/content/mailhandler'),
-    );
+//    $form['actions'] = array(
+//      '#prefix' => '<p><div class="confirmation container-inline">', 
+//      '#suffix' => '</div></p>',
+//      '#weight' => 100
+//    );
+//    $form['actions']['submit'] = array(
+//      '#type' => 'submit',
+//      '#value' => t('Save mailbox'),
+//    );
+//    $form['actions']['test'] = array(
+//      '#type' => 'submit',
+//      '#value' => t('Test connection'),
+//    );
+//    if ($mid) {
+//      $form['actions']['delete'] = array(
+//      '#type' => 'submit',
+//      '#value' => t('Delete mailbox'),
+//      '#submit' => array('mailhandler_delete_mailbox_submit'),
+//      '#validate' => array(),
+//      );
+//    }
+//    $form['actions']['cancel'] = array(
+//      '#value' => l(t('Cancel'), 'admin/content/mailhandler'),
+//    );
 
     return $form;
+  }
+  
+  function validate($form, &$form_state) {
+    
   }
   
   /**
