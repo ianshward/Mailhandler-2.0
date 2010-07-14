@@ -332,6 +332,9 @@ function mailhandler_mailboxes_load($name = '', $new = FALSE) {
   if ($object = mailhandler_plugin_load_class('mailhandler', $name, 'mailbox_plugin', 'handler', $mailbox)) {
     return $object;
   }
+  else {
+    return FALSE;
+  }
 }
 
 

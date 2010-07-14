@@ -78,6 +78,7 @@ function mailhandler_add_new_mailbox($form_state) {
     '#type' => 'textfield',
     '#title' => t('Email address'),
     '#description' => t('Enter email address of mailbox'),
+    '#required' => TRUE,
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -87,7 +88,12 @@ function mailhandler_add_new_mailbox($form_state) {
 }
 
 function mailhandler_add_new_mailbox_validate($form, &$form_state) {
-  // TODO: make sure is a valid email address and does not already exist.
+  if ($form_state['values']['mail'] && ($error = user_validate_mail($form_state['values']['mail']))) {
+    form_set_error('mail', $error);
+  }
+  if ($form_state['values']['mail'] && mailhandler_mailboxes_load($form_state['values']['mail'])) {
+    form_set_error('mail', t('The email address %address is already in use', array('%address' => $form_state['values']['mail'])));
+  }
 }
 
 function mailhandler_add_new_mailbox_submit($form, &$form_state) {
@@ -138,6 +144,7 @@ function mailhandler_admin_delete_confirm_submit($form, &$form_state) {
 /**
  * Test connection to a mailbox, and output results as a message
  */
+// TODO: try form_altering this in or re-integrate it.
 function mailhandler_test_mailbox(&$form_state) {
   module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
   $mailbox = $form_state['values'];
