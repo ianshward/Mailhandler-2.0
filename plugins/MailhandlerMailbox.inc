@@ -5,16 +5,29 @@ class MailhandlerMailbox {
   public $settings = NULL;
   public $mail = NULL;
   public $mailbox_type = NULL;
+  public $domain = NULL;
+  public $port = NULL;
+  public $extraimap = NULL;
+  public $folder = NULL;
+  public $pass = NULL;
   
   /**
    * Constructor
    */
   function __construct($mailbox = FALSE) {
+    // TODO not sure how PHP 5.3 will treat get_class where I'm calling the 
+    // class name explicitly.
+    
     // Fetch settings from database, propagate object.
     if ($mailbox) {
       $this->settings = $mailbox->settings;
       $this->mail = $mailbox->mail;
       $this->mailbox_type = $mailbox->mailbox_type;
+      $this->domain = $mailbox->settings['MailhandlerMailbox']['domain'];
+      $this->port = $mailbox->settings['MailhandlerMailbox']['port'];
+      $this->extraimap = $mailbox->settings['MailhandlerMailbox']['extraimap'];
+      $this->folder = $mailbox->settings['MailhandlerMailbox']['folder'];
+      $this->pass = $mailbox->settings['MailhandlerMailbox']['pass'];
     }
     else {
       $this->mailbox_type = get_class($this);

@@ -16,7 +16,7 @@ function mailhandler_open_mailbox($mailbox) {
     else {
       $box = '{'. $mailbox['domain'] .':'. $mailbox['port'] .'/pop3'. $mailbox['extraimap'] .'}'. $mailbox['folder'];
     }
-    $result = imap_open($box, $mailbox['name'], $mailbox['pass']);
+    $result = imap_open($box, $mailbox['mail'], $mailbox['pass']);
     $err = 'domain';
   }
   else {

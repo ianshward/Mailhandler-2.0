@@ -4,7 +4,7 @@
 /**
  * Parses a given file as a CSV file.
  */
-class MailhandlerParser extends FeedsParser {
+class MailhandlerNodeParser extends FeedsParser {
 
   /**
    * Implementation of FeedsParser::parse().

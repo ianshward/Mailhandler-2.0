@@ -25,8 +25,7 @@ class MailhandlerImportBatch extends FeedsImportBatch {
    * Implementation of FeedsImportBatch::getRaw();
    */
   public function getRaw() {
-    $mailbox = mailhandler_mailboxes_load($mailbox); 
-    $mailbox = array_shift($mailbox);
+    $mailbox = mailhandler_mailboxes_load($this->mailbox);
     $mailbox = (array) $mailbox; 
     module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
     if ($result = mailhandler_open_mailbox($mailbox)) {
