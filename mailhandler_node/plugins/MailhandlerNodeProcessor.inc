@@ -11,7 +11,8 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       $node = new stdClass();
       $node->type = $this->config['content_type'];
       $this->map($item, $node);
-      if ($item['mailbox']['commandplugin']) {
+      $commandplugin = $item['mailbox']->getSettings('commandplugin', $item['mailbox']);
+      if (is_array($commandplugin) && !empty($commandplugin)) {
         $this->commands($item, $node);
       }
       // Handle revision information now that the final 'type' is known
@@ -250,7 +251,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Parse and apply commands.
    */
   public function commands($item, &$node) {
-    if (($plugins = $item['mailbox']['commandplugin']) && !empty($plugins)) {
+    if (($plugins = $item['mailbox']->getSettings('commandplugin', $item['mailbox'])) && is_array($plugins) && !empty($plugins)) {
       foreach ($plugins as $plugin) {
         if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'commands', 'handler')) {
           $class->parse($item, &$node);
@@ -265,7 +266,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    */
   public function authenticate($item, &$node) {
     // TODO: allow for multiple authenticate plugins to be weighted and implemented.
-    if (($plugin = $item['mailbox']['authenticateplugin'])) {
+    if (($plugin = $item['mailbox']->getSettings('authenticateplugin', $item['mailbox']))) {
       if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'authenticate', 'handler')) {
         $class->authenticate($item, &$node);
       }

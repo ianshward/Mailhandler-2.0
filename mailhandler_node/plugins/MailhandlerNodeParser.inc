@@ -14,7 +14,7 @@ class MailhandlerNodeParser extends FeedsParser {
     if ($fetched['new']) {
       module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
       $messages = array();
-      $messages = mailhandler_retrieve($fetched['mailbox'], $fetched['mailbox']['limit'], $fetched['mailbox']['encoding']);
+      $messages = mailhandler_retrieve($fetched['mailbox'], $fetched['mailbox']->limit, $fetched['mailbox']->encoding);
       // Populate batch.
       if (!empty($messages)) {
         foreach ($messages as &$message) {

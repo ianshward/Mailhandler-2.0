@@ -10,6 +10,11 @@ class MailhandlerMailbox {
   public $extraimap = NULL;
   public $folder = NULL;
   public $pass = NULL;
+  public $limit = NULL;
+  public $mime = NULL;
+  public $delete_after_read = NULL;
+  public $encoding = NULL;
+  public $fromheader = NULL;
   
   /**
    * Constructor
@@ -28,6 +33,11 @@ class MailhandlerMailbox {
       $this->extraimap = $mailbox->settings['MailhandlerMailbox']['extraimap'];
       $this->folder = $mailbox->settings['MailhandlerMailbox']['folder'];
       $this->pass = $mailbox->settings['MailhandlerMailbox']['pass'];
+      $this->limit = $mailbox->settings['MailhandlerMailbox']['limit'];
+      $this->mime = $mailbox->settings['MailhandlerMailbox']['mime'];
+      $this->delete_after_read = $mailbox->settings['MailhandlerMailbox']['delete_after_read'];
+      $this->encoding = $mailbox->settings['MailhandlerMailbox']['encoding'];
+      $this->fromheader = $mailbox->settings['MailhandlerMailbox']['fromheader'];
     }
     else {
       $this->mailbox_type = get_class($this);
@@ -45,8 +55,13 @@ class MailhandlerMailbox {
     return $this->setInfo();
   }
   
-  public function getDefaults() {
-    return $this->settings;
+  public function getSettings($setting = '', $object = FALSE) {
+    if (!$setting) {
+      return $this->settings;
+    }
+    else {
+      return $this->settings[get_class($object)][$setting];
+    }
   }
   
   /**
@@ -112,7 +127,40 @@ class MailhandlerMailbox {
       '#default_value' => $defaults['extraimap'],
       '#description' => t('Optional. In some circumstances you need to issue extra commands to connect to your mail server (e.g. "/notls", "/novalidate-cert" etc.). See documentation for <a href="http://php.net/imap_open">imap_open</a>. Begin the string with a "/", separating each subsequent command with another "/".'),
     );
-
+    $form['limit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Maximum messages to retrieve'),
+      '#default_value' => $defaults['limit'],
+      '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
+    );
+    $form['encoding'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default character encoding'),
+      '#default_value' => $defaults['encoding'],
+      '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
+    );
+    $form['mime'] = array(
+      '#type' => 'select',
+      '#title' => t('MIME preference'),
+      '#options' => array(
+        'TEXT/HTML,TEXT/PLAIN' => 'HTML',
+        'TEXT/PLAIN,TEXT/HTML' => t('Plain text'),
+    ),
+      '#default_value' => $defaults['mime'],
+      '#description' => t('When a user sends an e-mail containing both HTML and plain text parts, use this part as the node body.'),
+    );
+    $form['delete_after_read'] = array(
+      '#type' => 'checkbox', 
+      '#title' => t('Delete messages after they are processed?'), 
+      '#default_value' => $defaults['delete_after_read'], 
+      '#description' => t('Uncheck this box to leave read messages in the mailbox. They will not be processed again unless they become marked as unread.  If you selected "POP3" as your mailbox type, you must check this box.')
+    );
+    $form['fromheader'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('From header'), 
+      '#default_value' => $defaults['fromheader'],
+      '#description' => t('Use this e-mail header to determine the author of the resulting node. Admins usually leave this field blank (thus using the <strong>From</strong> header), but <strong>Sender</strong> is also useful when working with listservs.')
+    );
     return $form;
   }
   

@@ -9,18 +9,18 @@
  * @return IMAP stream
  */
 function mailhandler_open_mailbox($mailbox) {
-  if ($mailbox['domain']) {
-    if ($mailbox['imap'] == 1) {
-      $box = '{'. $mailbox['domain'] .':'. $mailbox['port'] . $mailbox['extraimap'] .'}'. $mailbox['folder'];
+  if ($mailbox->domain) {
+    if ($mailbox->imap == 1) {
+      $box = '{'. $mailbox->domain .':'. $mailbox->port . $mailbox->extraimap .'}'. $mailbox->folder;
     }
     else {
-      $box = '{'. $mailbox['domain'] .':'. $mailbox['port'] .'/pop3'. $mailbox['extraimap'] .'}'. $mailbox['folder'];
+      $box = '{'. $mailbox->domain .':'. $mailbox->port .'/pop3'. $mailbox->extraimap .'}'. $mailbox->folder;
     }
-    $result = imap_open($box, $mailbox['mail'], $mailbox['pass']);
+    $result = imap_open($box, $mailbox->mail, $mailbox->pass);
     $err = 'domain';
   }
   else {
-    $box = $mailbox['folder'];
+    $box = $mailbox->folder;
     $result = imap_open($box, '', '');
   }
   return $result;
@@ -268,7 +268,7 @@ function mailhandler_retrieve_message($result, $mailbox, $i, $encoding) {
   if (!isset($header->subject)) {
     $header->subject = '';
   }
-  $mime = explode(',', $mailbox['mime']);
+  $mime = explode(',', $mailbox->mime);
   // Get the first text part - this will be the node body
   $origbody = mailhandler_get_part($result, $i, $mime[0], false, false, $encoding);
   // If we didn't get a body from our first attempt, try the alternate format (HTML or PLAIN)
@@ -286,7 +286,7 @@ function mailhandler_retrieve_message($result, $mailbox, $i, $encoding) {
     return;
   }
   // Don't delete while we're only getting new messages
-  if ($mailbox['delete_after_read']) {
+  if ($mailbox->delete_after_read) {
     imap_delete($result, $i, FT_UID);
   }
   return array('header' => $header, 'origbody' => $origbody, 'mimeparts' => $mimeparts, 'mailbox' => $mailbox);
@@ -307,7 +307,7 @@ function mailhandler_retrieve($mailbox, $limit = 0, $encoding = 'UTF-8') {
     $new = mailhandler_get_unread_messages($result);
   }
   else {
-    watchdog('mailhandler', 'Unable to connect to %mail', array('%mail' => $mailbox['mail']), WATCHDOG_ERROR);
+    watchdog('mailhandler', 'Unable to connect to %mail', array('%mail' => $mailbox->mail), WATCHDOG_ERROR);
   }
   if ($result && !empty($new)) {
     $messages = array();
@@ -320,6 +320,6 @@ function mailhandler_retrieve($mailbox, $limit = 0, $encoding = 'UTF-8') {
     return $messages;
   }
   else {
-    watchdog('mailhandler', 'Mailbox %mail was checked and contained no new messages.', array('%mail' => $mailbox['mail']), WATCHDOG_ERROR);
+    watchdog('mailhandler', 'Mailbox %mail was checked and contained no new messages.', array('%mail' => $mailbox->mail), WATCHDOG_ERROR);
   }
 }

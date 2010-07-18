@@ -18,7 +18,7 @@ function mailhandler_mailbox_form($form_state, $op, $mail, $type = 'MailhandlerM
     // Load the object and get its type
     $mailbox = mailhandler_mailboxes_load($mail);
     $form['#mailhandler_mailbox'] = $mailbox;
-    $defaults = $mailbox->getDefaults();
+    $defaults = $mailbox->getSettings();
     $defaults = $defaults[$type];
   }
   // Make sure the class is loaded, then call its form.

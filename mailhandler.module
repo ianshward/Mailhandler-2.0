@@ -139,7 +139,7 @@ function mailhandler_mail($key, &$message, $params) {
  * @return array
  */
 function mailhandler_get_fromaddress($header, $mailbox) {
-  if (($fromheader = strtolower($mailbox['fromheader'])) && isset($header->$fromheader)) {
+  if (($fromheader = strtolower($mailbox->fromheader)) && isset($header->$fromheader)) {
     $from = $header->$fromheader;
   }
   else {

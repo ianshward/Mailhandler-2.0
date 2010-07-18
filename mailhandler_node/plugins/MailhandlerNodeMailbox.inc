@@ -19,16 +19,6 @@ class MailhandlerNodeMailbox extends MailhandlerMailbox {
   
   public function form(&$form_state, $defaults) {
     $form = array();
-    $form['mime'] = array(
-      '#type' => 'select',
-      '#title' => t('MIME preference'),
-      '#options' => array(
-        'TEXT/HTML,TEXT/PLAIN' => 'HTML',
-        'TEXT/PLAIN,TEXT/HTML' => t('Plain text'),
-    ),
-      '#default_value' => $defaults['mime'],
-      '#description' => t('When a user sends an e-mail containing both HTML and plain text parts, use this part as the node body.'),
-    );
     $form['security'] = array(
       '#type' => 'radios',
       '#title' => t('Security'),
@@ -43,41 +33,17 @@ class MailhandlerNodeMailbox extends MailhandlerMailbox {
       '#default_value' => $defaults['replies'],
       '#description' => t('Send helpful replies to all unsuccessful e-mail submissions. Consider disabling when a listserv posts to this mailbox.')
     );
-    $form['fromheader'] = array(
-      '#type' => 'textfield', 
-      '#title' => t('From header'), 
-      '#default_value' => $defaults['fromheader'],
-      '#description' => t('Use this e-mail header to determine the author of the resulting node. Admins usually leave this field blank (thus using the <strong>From</strong> header), but <strong>Sender</strong> is also useful when working with listservs.')
-    );
     $form['sigseparator'] = array(
       '#type' => 'textfield', 
       '#title' => t('Signature separator'), 
       '#default_value' => $defaults['sigseparator'], 
       '#description' => t('All text after this string will be discarded. A typical value is <strong>"-- "</strong> that is two dashes followed by a blank in an otherwise empty line. Leave blank to include signature text in nodes.')
     );
-    $form['delete_after_read'] = array(
-      '#type' => 'checkbox', 
-      '#title' => t('Delete messages after they are processed?'), 
-      '#default_value' => $defaults['delete_after_read'], 
-      '#description' => t('Uncheck this box to leave read messages in the mailbox. They will not be processed again unless they become marked as unread.  If you selected "POP3" as your mailbox type, you must check this box.')
-    );
     $form['commands'] = array(
       '#type' => 'textarea',
       '#title' => t('Default commands'),
       '#description' => t('A set of commands which are added to each message.'),
       '#default_value' => $defaults['commands'],
-    );
-    $form['encoding'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Default character encoding'),
-      '#default_value' => $defaults['encoding'],
-      '#description' => t('The default character encoding to use when an incoming message does not define an encoding.')
-    );
-    $form['max'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Maximum messages to retrieve'),
-      '#default_value' => $defaults['limit'],
-      '#description' => t('To prevent timeout errors from large mailboxes you can limit the maximum number of messages that will be retrieved during each cron run.  A value of zero means that no limit will be applied. Some trial and error may be needed to find the optimum setting.'),
     );
     ctools_include('plugins');
     $options = array();

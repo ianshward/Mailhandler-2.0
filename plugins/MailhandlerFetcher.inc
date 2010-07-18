@@ -26,7 +26,6 @@ class MailhandlerImportBatch extends FeedsImportBatch {
    */
   public function getRaw() {
     $mailbox = mailhandler_mailboxes_load($this->mailbox);
-    $mailbox = (array) $mailbox; 
     module_load_include('inc', 'mailhandler', 'mailhandler.retrieve');
     if ($result = mailhandler_open_mailbox($mailbox)) {
       $new = mailhandler_get_unread_messages($result);
@@ -38,7 +37,6 @@ class MailhandlerImportBatch extends FeedsImportBatch {
       drupal_set_message('Unable to connect to mailbox.');
     }
   }
-
 }
 
 /**
