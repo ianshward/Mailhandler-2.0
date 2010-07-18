@@ -100,6 +100,13 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
   );
+  $items['admin/content/mailhandler/toggle'] = array(
+    'title' => 'Toggle mailbox type',
+    'page callback' => 'mailhandler_mailbox_toggle_type',
+    'access arguments' => array('administer mailhandler'),
+    'type' => MENU_CALLBACK,
+    'file' => 'mailhandler.admin.inc',
+  );
   return $items;
 }
 

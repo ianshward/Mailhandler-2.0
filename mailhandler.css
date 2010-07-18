@@ -22,6 +22,9 @@ h4.mailhandler-settings-container-title {
   border-top:2px solid #D3E7F4;
   padding: 0 5px;
 }
+.mailhandler-settings-container-operations a {
+  padding: 0 10px 0 0;
+}
 .mailhandler-settings-container-operations a.active {
 	color: #000;
 }

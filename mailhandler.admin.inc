@@ -49,7 +49,6 @@ function mailhandler_mailbox_form_submit($form, &$form_state) {
   // Prepare values for submission.  Check which modules 
   $record = array();
   $record['mail'] = $form['#mailhandler_mail'];
-  $record['mailbox_type'] = $form['#mailhandler_class'];
   // Only affect the settings key which pertains to the mailbox Type being edited.
   if ($form['#mailhandler_mailbox'] && $current = db_result(db_query("SELECT settings FROM {mailhandler} WHERE mail = '%s'", $record['mail']))) {
     $current = unserialize($current);
@@ -166,6 +165,14 @@ function mailhandler_test_mailbox(&$form_state) {
   return;
 }
 
+function mailhandler_mailbox_toggle_type($mail, $type, $title) {
+  if ($mailbox = db_fetch_object(db_query("SELECT * FROM {mailhandler} WHERE mail = '%s'", $mail))) {
+    db_query("UPDATE {mailhandler} SET mailbox_type = '%s' WHERE mail = '%s'", $type, $mail);
+    drupal_set_message(t('%type is now the active mailbox type.', array('%type' => $title)));
+    drupal_goto(drupal_get_destination());
+  }
+}
+
 /**
  * Theme function for theme('mailhandler_mailbox_form')
  */
@@ -187,11 +194,15 @@ function theme_mailhandler_mailbox_form($form) {
     $output .= t($info['description']);
     $output .= '<div class="mailhandler-settings-container-operations">';
     $output .= l(t('Edit'), 'admin/content/mailhandler/'.$form['#mailhandler_op'].'/'.$form['#mailhandler_mail'].'/'.$plugin['name']);
-    $output .= '</div>';
-    $output .= '</div>';
-    $output .= '</div>';
-    $output .= '</div>';
-    $i++;
+    if ($form['#mailhandler_op'] == 'edit') {
+      if ($plugin['name'] != $form['#mailhandler_mailbox']->mailbox_type) {
+        $output .= l(t('Set active'), 'admin/content/mailhandler/toggle/'.$form['#mailhandler_mail'].'/'.$plugin['name'] .'/'.$info['title'], array('query' => drupal_get_destination()));
+      }
+      else {
+        $output .= t('%active', array('%active' => 'Active'));
+      }
+    }
+    $output .= '</div></div></div></div>';
   }
   $output .= '</div>';
   $output .= '<div class="main-bar">';
