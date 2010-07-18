@@ -170,6 +170,7 @@ function mailhandler_test_mailbox(&$form_state) {
  * Theme function for theme('mailhandler_mailbox_form')
  */
 function theme_mailhandler_mailbox_form($form) {
+  drupal_add_css(drupal_get_path('module', 'mailhandler') .'/mailhandler.css');
   $output = '<div class="mailhandler-settings clear-block">';
   $output .= '<div class="left-bar">';
   $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
@@ -177,7 +178,20 @@ function theme_mailhandler_mailbox_form($form) {
     $object = FALSE;
     $object = mailhandler_plugin_load_class('mailhandler', $plugin['name'], 'mailbox_plugin', 'handler');
     $info = $object->getInfo();
-    $output .= l(t($info['title']), 'admin/content/mailhandler/'.$form['#mailhandler_op'].'/'.$form['#mailhandler_mail'].'/'.$plugin['name']);
+    $output .= '<div class="mailhandler-settings-container">';
+    $output .= '<h4 class="mailhandler-settings-container-title">';
+    $output .= t($info['title']);
+    $output .= '</h4>';
+    $output .= '<div class="mailhandler-settings-container-body '.$zebra.'">';
+    $output .= '<div class="mailhandler-settings-desc">';
+    $output .= t($info['description']);
+    $output .= '<div class="mailhandler-settings-container-operations">';
+    $output .= l(t('Edit'), 'admin/content/mailhandler/'.$form['#mailhandler_op'].'/'.$form['#mailhandler_mail'].'/'.$plugin['name']);
+    $output .= '</div>';
+    $output .= '</div>';
+    $output .= '</div>';
+    $output .= '</div>';
+    $i++;
   }
   $output .= '</div>';
   $output .= '<div class="main-bar">';

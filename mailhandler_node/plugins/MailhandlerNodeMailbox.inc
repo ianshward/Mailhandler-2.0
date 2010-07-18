@@ -8,7 +8,7 @@ class MailhandlerNodeMailbox extends MailhandlerMailbox {
   
   private function setInfo() {
     return array(
-      'title' => 'Mailhandler Node Mailbox',
+      'title' => 'Node Mailbox',
       'description' => 'Create nodes with new messages',
     );
   }

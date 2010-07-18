@@ -1,0 +1,27 @@
+.mailhandler-settings .left-bar {
+  float: left;
+  width: 20%;
+  margin: 0 10px 0 0;
+  border-right: 1px solid #D3E7F4;
+}
+.mailhandler-settings .main-bar {
+  float: left;
+  width: 70%;
+}
+.mailhandler-settings-container {
+  padding: 10px 0px;
+  margin: 0 5px 0 0;
+}
+h4.mailhandler-settings-container-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+.mailhandler-settings-container-body {
+  background-color: #EDF5FA;
+  border-bottom:1px solid #D3E7F4;
+  border-top:2px solid #D3E7F4;
+  padding: 0 5px;
+}
+.mailhandler-settings-container-operations a.active {
+	color: #000;
+}

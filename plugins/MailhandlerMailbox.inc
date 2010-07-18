@@ -46,8 +46,8 @@ class MailhandlerMailbox {
   
   private function setInfo() {
     return array(
-      'title' => 'Simple mailhandler mailbox',
-      'description' => 'This mailbox type does not do much, yet',
+      'title' => 'Basic mailbox',
+      'description' => 'Base settings for mailbox.',
     );
   }
   
