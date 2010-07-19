@@ -1,8 +1,8 @@
 <?php
-// $Id: FeedsCSVParser.inc,v 1.8 2010/03/29 04:02:37 alexb Exp $
+// $Id$
 
 /**
- * Parses a given file as a CSV file.
+ * Parses an IMAP stream
  */
 class MailhandlerNodeParser extends FeedsParser {
 

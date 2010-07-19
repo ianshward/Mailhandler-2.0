@@ -1,5 +1,6 @@
 <?php
 
+// $Id$
 
 /**
  * Establish IMAP stream connection to specified mailbox.

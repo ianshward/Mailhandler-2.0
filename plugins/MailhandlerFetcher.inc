@@ -1,9 +1,9 @@
 <?php
-// $Id: FeedsFileFetcher.inc,v 1.9 2010/03/29 02:55:50 alexb Exp $
+// $Id$
 
 /**
  * @file
- * Home of the FeedsFileFetcher and related classes.
+ * Checks for new messages on an IMAP stream
  */
 
 /**

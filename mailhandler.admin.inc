@@ -1,5 +1,7 @@
 <?php
 
+// $Id$
+
 /**
  * Return a form for editing or creating an individual mailbox.
  * 

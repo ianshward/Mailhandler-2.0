@@ -1,5 +1,7 @@
 <?php
 
+// $Id$
+
 class MailhandlerMailbox {
   
   public $settings = NULL;
