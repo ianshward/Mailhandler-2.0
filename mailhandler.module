@@ -418,9 +418,19 @@ function mailhandler_feeds_plugins() {
     'name' => 'Mailhandler fetcher',
     'description' => 'Connects to an IMAP/POP mailbox.',
     'handler' => array(
-      'parent' => 'FeedsFetcher', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'parent' => 'FeedsFetcher',
       'class' => 'MailhandlerFetcher',
       'file' => 'MailhandlerFetcher.inc',
+      'path' => drupal_get_path('module', 'mailhandler') . '/plugins',
+    ),
+  );
+  $info['MailhandlerParser'] = array(
+    'name' => 'Mailhandler IMAP stream parser',
+    'description' => 'Parses an IMAP stream.',
+    'handler' => array(
+      'parent' => 'FeedsParser',
+      'class' => 'MailhandlerParser',
+      'file' => 'MailhandlerParser.inc',
       'path' => drupal_get_path('module', 'mailhandler') . '/plugins',
     ),
   );

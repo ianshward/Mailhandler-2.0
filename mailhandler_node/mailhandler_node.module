@@ -103,15 +103,5 @@ function mailhandler_node_feeds_plugins() {
       'path' => drupal_get_path('module', 'mailhandler_node') . '/plugins',
     ),
   );
-  $info['MailhandlerNodeParser'] = array(
-    'name' => 'Mailhandler node parser',
-    'description' => 'Parses an IMAP stream, node-centric.',
-    'handler' => array(
-      'parent' => 'FeedsParser', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
-      'class' => 'MailhandlerNodeParser',
-      'file' => 'MailhandlerNodeParser.inc',
-      'path' => drupal_get_path('module', 'mailhandler_node') . '/plugins',
-    ),
-  );
   return $info;
 }

@@ -180,9 +180,9 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    * Override setTargetElement to operate on a target item that is a node.
    */
   public function setTargetElement($target_node, $target_element, $value) {
-    if (in_array($target_element, array('status', 'type', 'size', 'origbody'))) {
-      $target_node->$target_element = $value;
-    }
+//    if (in_array($target_element, array('status', 'type', 'size', 'origbody'))) {
+//      $target_node->$target_element = $value;
+//    }
   }
   
   /**
@@ -356,7 +356,11 @@ function _mailhandler_node_processor_target_teaser($node, $target, $value) {
   $node->$target = node_teaser($node->body);
 }
 
+// @TODO This should probably just be done in process() and not as a target callback
 function _mailhandler_node_processor_target_threading($node, $target, $value) {
+  //$message['threading'] = array('references' => $message['header']->references, 'in_reply_to' => $message['header']->in_reply_to); //$message;
+  // This message['threading'] is what i had in the parser
+  
   // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
   if (!empty($value['references'])) {
     // we want the final element in references header, watching out for white space
