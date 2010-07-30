@@ -1,3 +1,5 @@
 name = "Mailhandler Node"
 description = "Create nodes with mailhandler"
 core = "6.x"
+package = "Mailhandler"
+dependencies[] = "mailhandler"
