@@ -79,18 +79,18 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.admin.inc',
   );
-//  $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
-//    'title' => 'Mailhandler',
-//    'title callback' => 'mailhandler_operations_title',
-//    'title arguments' => array(3, 4),
-//    'description' => 'Perform mailhandler operations',
-//    'page callback' =>  'mailhandler_operations',
-//    'page arguments' => array(3,4),
-//    //'load arguments' => array(array('name' => 4), 'names'),
-//    'access arguments' => array('administer mailhandler'),
-//    'type' => MENU_CALLBACK,
-//    'file' => 'mailhandler.admin.inc',
-//  );
+  $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
+    'title' => 'Mailhandler',
+    'title callback' => 'mailhandler_operations_title',
+    'title arguments' => array(3, 4),
+    'description' => 'Perform mailhandler operations',
+    'page callback' =>  'mailhandler_operations',
+    'page arguments' => array(3,4),
+    //'load arguments' => array(array('name' => 4), 'names'),
+    'access arguments' => array('administer mailhandler'),
+    'type' => MENU_CALLBACK,
+    'file' => 'mailhandler.admin.inc',
+  );
 // TODO: weed out unnecessary menus.
   $items['admin/content/mailhandler/edit/%'] = array(
     'title' => 'Edit mailbox',
@@ -198,14 +198,9 @@ function mailhandler_user_load_alias($fromaddress, $node, $mailbox) {
 /**
 * Export mailhandler mapping and display it in a form.
 */
-function mailhandler_mailbox_export(&$form_state, $name) {
-  $obj = mailhandler_mailboxes_load($name);
-  drupal_set_title(check_plain($obj->description));
-  $code = mailhandler_mailbox_export_export($obj);
+function mailhandler_mailbox_export(&$form_state, $mailbox) {
+  $code = mailhandler_mailbox_export_export($mailbox);
   $lines = substr_count($code, "\n");
-
-  // TODO: title callback is not setting the title.
-  drupal_set_title(t('Export mailbox !mailbox', array('!mailbox' => $name)));
   $form['export'] = array(
     '#title' => t('Export data'),
     '#type' => 'textarea',
@@ -219,9 +214,9 @@ function mailhandler_mailbox_export(&$form_state, $name) {
 /**
  * Export a mailbox 
  */
-function mailhandler_mailbox_export_export($obj, $indent = '') {
+function mailhandler_mailbox_export_export($mailbox, $indent = '') {
   ctools_include('export');
-  $output = ctools_export_object('mailhandler', $obj, $indent);
+  $output = ctools_export_object('mailhandler', $mailbox, $indent);
   return $output;
 }
 
@@ -350,6 +345,8 @@ function mailhandler_operations_title($op = '', $mailbox = '') {
   switch($op) {
     case 'edit':
       return t('Edit mailbox !mailbox', array('!mailbox' => $mailbox->mail));
+    case 'export':
+      return t('Export mailbox !mailbox', array('!mailbox' => $mailbox->mail));
     default:
       return;
       break;
