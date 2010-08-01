@@ -95,6 +95,8 @@ function mailhandler_user_load($mail, $pass, $mailbox) {
 }
 
 /**
+ * @TODO this should not live here.
+ * 
  * Look up a user based on their mailalias addresses
  * 
  * Helper function for mailhandler_authenticate_tokenauth()
@@ -149,6 +151,9 @@ function mailhandler_theme() {
 }
 
   /*
+   * 
+   * @TODO finish this documentation
+   * 
    * Cases
    * 
    * Load all mailboxes for summary
@@ -245,7 +250,7 @@ function mailhandler_plugin_load_class($module, $plugin, $type, $id, $args = NUL
 }
 
 /**
- * 
+ * @TODO document this.
  * 
  * @param $type
  *   String - type of mailhandler plugins to retrieve.
@@ -278,7 +283,6 @@ function mailhandler_ctools_plugin_directory($module, $plugin) {
  * This design was somewhat influenced by the lack of late static bindings in
  * PHP < 5.3
  */
-//function mailhandler_mailbox_form($form_state, $op, $mail, $type = 'MailhandlerMailbox') {
 function mailhandler_mailbox_form(&$form, &$form_state, $type = 'MailhandlerMailbox') {  
   $form['#theme'] = 'mailhandler_mailbox_form';
   // Set some values which will be used below as well as in the submit handler.
