@@ -71,13 +71,6 @@ class MailhandlerMailbox {
    */
   public function form(&$form_state, $defaults) {
     $form = array();
-//    $form['mail'] = array(
-//      '#type' => 'textfield',
-//      '#title' => t('E-mail address'),
-//      '#default_value' => $defaults['mail'] ? $defaults['mail'] : arg(4),
-//      '#description' => t('The e-mail address to which users should send their submissions.'),
-//      '#required' => TRUE,
-//    );
     $form['mailto'] = array(
       '#type' => 'textfield',
       '#title' => t('Second E-mail address'),
