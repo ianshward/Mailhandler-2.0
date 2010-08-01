@@ -71,13 +71,13 @@ class MailhandlerMailbox {
    */
   public function form(&$form_state, $defaults) {
     $form = array();
-    $form['mail'] = array(
-      '#type' => 'textfield',
-      '#title' => t('E-mail address'),
-      '#default_value' => $defaults['mail'] ? $defaults['mail'] : arg(4),
-      '#description' => t('The e-mail address to which users should send their submissions.'),
-      '#required' => TRUE,
-    );
+//    $form['mail'] = array(
+//      '#type' => 'textfield',
+//      '#title' => t('E-mail address'),
+//      '#default_value' => $defaults['mail'] ? $defaults['mail'] : arg(4),
+//      '#description' => t('The e-mail address to which users should send their submissions.'),
+//      '#required' => TRUE,
+//    );
     $form['mailto'] = array(
       '#type' => 'textfield',
       '#title' => t('Second E-mail address'),
@@ -167,55 +167,47 @@ class MailhandlerMailbox {
   }
   
   function validate($form, &$form_state) {
+    // Check whether valid email address.
+    if ($error = user_validate_mail($form_state['values']['mail'])) {
+      form_set_error('mail', $error);
+    }
+    // Check whether email address already exists
+    if ($result = db_result(db_query("SELECT 1 FROM {mailhandler} WHERE mail = '%s'", $form_state['values']['mail']))) {
+      form_set_error('mail', t('Mailbox %mail already exists.  Please use a unique mailbox name.', array('%mail' => $form_state['values']['mail'])));
+    }
+    // Check whether mailto is valid.
+    if ($form_state['values']['mailto'] && ($error = user_validate_mail($form_state['values']['mailto']))) {
+      form_set_error('mailto', $error);
+    }
     
-  }
-  
-  /**
-   * Validate form submission
-   */
-  function baseFormValidate($form, &$form_state) {
+    // Test POP/IMAP settings, and store result
+    $mailbox_appears_ok = TRUE;
 
-//    // Check for valid email address
-//    if ($error = user_validate_mail($form_state['values']['MailhandlerMailbox']['mail'])) {
-//      form_set_error('mail', $error);
-//    }
-//    
-//    krumo($form_state);
-//
-//    if ($form_state['values']['mailto'] && ($error = user_validate_mail($form_state['values']['mailto']))) {
-//      form_set_error('mailto', $error);
-//    }
-//
-//    // Test POP/IMAP settings, and store result
-//    $mailbox_appears_ok = TRUE;
-//
-//    if ($form_state['values']['domain'] && $form_state['values']['port'] && !is_numeric($form_state['values']['port'])) { // assume external mailbox
-//      form_set_error('port', t('Mailbox port must be an integer.'));
-//      $mailbox_appears_ok = FALSE;
-//    }
-//
-//    if (!$form_state['values']['domain'] && !$form_state['values']['port'] && $form_state['values']['folder']) { // assume local folder
-//      // check read and write permission
-//      if (!is_readable($form_state['values']['folder']) || !is_writable($form_state['values']['folder'])) {
-//        form_set_error('port', t('The local folder has to be readable and writable by owner of the webserver process, e.g. nobody.'));
-//        $mailbox_appears_ok = FALSE;
-//      }
-//    }
-//
+    if ($form_state['values']['domain'] && $form_state['values']['port'] && !is_numeric($form_state['values']['port'])) { // assume external mailbox
+      form_set_error('port', t('Mailbox port must be an integer.'));
+      $mailbox_appears_ok = FALSE;
+    }
+
+    if (!$form_state['values']['domain'] && !$form_state['values']['port'] && $form_state['values']['folder']) { // assume local folder
+      // check read and write permission
+      if (!is_readable($form_state['values']['folder']) || !is_writable($form_state['values']['folder'])) {
+        form_set_error('port', t('The local folder has to be readable and writable by owner of the webserver process, e.g. nobody.'));
+        $mailbox_appears_ok = FALSE;
+      }
+    }
+    // @TODO get this working again.
 //    // Test POP/IMAP settings are valid in all cases, and test connection if requested
 //    if ($mailbox_appears_ok && $form_state['clicked_button']['#value'] == t('Test connection')) {
 //      // Call the test function
 //      mailhandler_test_mailbox($form_state);
-//
 //      // We don't want to save, so we set an 'invisible error' that means the form is not submitted
 //      form_set_error('mailhandler');
 //    }
-//
-//    // If POP3 mailbox is chosen, messages must be deleted after processing.
-//    if ($form_state['values']['imap'] == 0 && $form_state['values']['delete_after_read'] == 0) {
-//      form_set_error('delete_after_read', t('You must check off "Delete messages after they are processed" when using a POP3 mailbox.'));
-//    }
 
+    // If POP3 mailbox is chosen, messages must be deleted after processing.
+    if ($form_state['values']['imap'] == 0 && $form_state['values']['delete_after_read'] == 0) {
+      form_set_error('delete_after_read', t('You must check off "Delete messages after they are processed" when using a POP3 mailbox.'));
+    }
   }
-
+  
 }

@@ -14,54 +14,8 @@ function mailhandler_perm() {
  */
 function mailhandler_menu() {
   $items = array();
-  $items['admin/content/mailhandler'] = array(
-    'title' => 'Mailhandler Mailboxes',
-    'description' => t('Manage mailboxes'),
-    'page callback' => 'mailhandler_operations_view',
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-  $items['admin/content/mailhandler/view'] = array(
-    'title' => 'List',
-    'description' => 'Manage mailboxes',
-    'page callback' =>  'mailhandler_operations_view',
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -1,
-  );
-  $items['admin/content/mailhandler/add'] = array(
-    'title' => 'Add mailbox',
-    'page arguments' => array(3),
-    'page callback' => 'mailhandler_operations',
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'mailhandler.admin.inc',
-  );
-//  $items['admin/content/mailhandler/add/%mailhandler_mailboxes'] = array(
-//    'title' => 'Add mailbox',
-//    'page arguments' => array(3, 4),
-//    'load arguments' => array(TRUE),
-//    'page callback' => 'mailhandler_operations',
-//    'access arguments' => array('administer mailhandler'),
-//    'type' => MENU_LOCAL_TASK,
-//    'file' => 'mailhandler.admin.inc',
-//  );
-  $items['admin/content/mailhandler/add/%'] = array(
-    'title' => 'Add mailbox',
-    'page arguments' => array('mailhandler_mailbox_form', 3, 4),
-    'page callback' => 'drupal_get_form',
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'mailhandler.admin.inc',
-  );
-  $items['admin/content/mailhandler/clone/%'] = array(
-    'title' => 'Add mailbox',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mailhandler_mailbox_form', 4, TRUE),
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mailhandler.admin.inc',
-  );
+  // @TODO may need to add this button in to ctools, but may not make sense
+  // now with Feeds integration.
   $items['admin/content/mailhandler/retrieve/%mailhandler_mailbox'] = array(
     'title' => 'Retrieve',
     'page callback' => 'mailhandler_node_process_mailbox',
@@ -71,41 +25,12 @@ function mailhandler_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mailhandler.retrieve.inc',
   );
-  $items['admin/content/mailhandler/delete/%'] = array(
-    'title' => 'Delete mailbox',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mailhandler_admin_delete_confirm', 4),
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mailhandler.admin.inc',
-  );
-  $items['admin/content/mailhandler/%/%mailhandler_mailboxes'] = array(
-    'title' => 'Mailhandler',
-    'title callback' => 'mailhandler_operations_title',
-    'title arguments' => array(3, 4),
-    'description' => 'Perform mailhandler operations',
-    'page callback' =>  'mailhandler_operations',
-    'page arguments' => array(3,4),
-    //'load arguments' => array(array('name' => 4), 'names'),
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mailhandler.admin.inc',
-  );
-// TODO: weed out unnecessary menus.
-  $items['admin/content/mailhandler/edit/%'] = array(
-    'title' => 'Edit mailbox',
-    'page arguments' => array('mailhandler_mailbox_form', 3, 4),
-    'page callback' => 'drupal_get_form',
-    'access arguments' => array('administer mailhandler'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mailhandler.admin.inc',
-  );
   $items['admin/content/mailhandler/toggle'] = array(
     'title' => 'Toggle mailbox type',
     'page callback' => 'mailhandler_mailbox_toggle_type',
     'access arguments' => array('administer mailhandler'),
     'type' => MENU_CALLBACK,
-    'file' => 'mailhandler.admin.inc',
+    //'file' => 'mailhandler.admin.inc',
   );
   return $items;
 }
@@ -196,31 +121,6 @@ function mailhandler_user_load_alias($fromaddress, $node, $mailbox) {
 }
 
 /**
-* Export mailhandler mapping and display it in a form.
-*/
-function mailhandler_mailbox_export(&$form_state, $mailbox) {
-  $code = mailhandler_mailbox_export_export($mailbox);
-  $lines = substr_count($code, "\n");
-  $form['export'] = array(
-    '#title' => t('Export data'),
-    '#type' => 'textarea',
-    '#value' => $code,
-    '#rows' => $lines,
-    '#description' => t(''),
-  );
-  return $form;
-}
-
-/**
- * Export a mailbox 
- */
-function mailhandler_mailbox_export_export($mailbox, $indent = '') {
-  ctools_include('export');
-  $output = ctools_export_object('mailhandler', $mailbox, $indent);
-  return $output;
-}
-
-/**
  * Implementation of hook_ctools_plugin_api()
  */
 function mailhandler_ctools_plugin_api($module, $api) {
@@ -243,59 +143,10 @@ function mailhandler_ctools_plugin_api($module, $api) {
  */
 function mailhandler_theme() {
   $hooks = array();
-  $hooks['mailhandler_operations_view'] = array(
-    'arguments' => array(),
-  );
-  $hooks['mailhandler_view_mapping_formatter'] = array(
-    'arguments' => array(),
-  );
   $hooks['mailhandler_mailbox_form'] = array(
     'form' => array(),
   );
   return $hooks;
-}
-
-function theme_mailhandler_operations_view($maps) {
-  // Theme these into a table with EDIT | DELETE | ACTIVATE | EXPORT
-  $header = array(t('Name'), t('Status'), t('Operations'));
-  $rows = array();
-  if (!empty($maps)) {
-    foreach ($maps as $map) {
-      $rows[] = array(
-      l($map->mail, "admin/settings/mailhandler/edit/$map->mail"),
-      t($map->type),
-      mailhandler_operations_view_options($map),
-      );
-    }
-  }
-  return theme('table', $header, $rows);
-}
-
-function mailhandler_operations_view_options($mailbox) {
-  $ops = array();
-  $ops['edit'] = array(
-    'name' => t('Edit'),
-    'path' => "admin/content/mailhandler/edit/$mailbox->mail",
-  );
-  $ops['delete'] = array(
-    'name' => t('Delete'),
-    'path' => "admin/content/mailhandler/delete/$mailbox->mail"
-  );
-  $mailbox->mail == $active ? $status = t('Disable') : $status = t('Enable');
-  $ops['toggle'] = array(
-    'name' => $status,
-    'path' => "admin/content/mailhandler/toggle/$mailbox->mail"
-  );
-  $ops['export'] = array(
-    'name' => t('Export'),
-    'path' => "admin/content/mailhandler/export/$mailbox->mail"
-  );
-  $links = array();
-  foreach ($ops as $op) {
-    $links[] = l($op['name'], $op['path']);
-  }
-  $links = implode(" | ", $links);
-  return $links;
 }
 
   /*
@@ -339,49 +190,6 @@ function mailhandler_mailboxes_load($name = '', $new = FALSE) {
   }
 }
 
-
-function mailhandler_operations_title($op = '', $mailbox = '') {
-  //$map = array_shift($map); // TODO: is this always going to be an object, and not an array?
-  switch($op) {
-    case 'edit':
-      return t('Edit mailbox !mailbox', array('!mailbox' => $mailbox->mail));
-    case 'export':
-      return t('Export mailbox !mailbox', array('!mailbox' => $mailbox->mail));
-    default:
-      return;
-      break;
-  }
-}
-
-function mailhandler_operations($op = '', $mailbox = '') {
-  switch($op) {
-    case 'add':
-      // Mailbox type chosen, proceed to form.
-      if ($mailbox) {
-        return drupal_get_form('mailhandler_mailbox_form', $mailbox);
-      }
-      // Allow choice of mailbox type.
-      else {
-        return drupal_get_form('mailhandler_add_new_mailbox');
-      }
-    case 'edit':
-      return drupal_get_form('mailhandler_mailbox_form', $mailbox);
-    case 'delete':
-      return drupal_get_form('mailhandler_operations_delete_confirm', $mailbox);
-    case 'toggle':
-      return drupal_get_form('mailhandler_operations_toggle_confirm', $mailbox);
-    case 'export':
-      return drupal_get_form('mailhandler_mailbox_export', $mailbox);
-    default:
-      return mailhandler_operations_view();
-  }
-}
-
-function mailhandler_operations_view() {
-  return theme('mailhandler_operations_view', mailhandler_mailboxes_load());
-}
-
-
 /**
  * Implementation of hook_mailhandler_mailbox().
  */
@@ -395,14 +203,6 @@ function mailhandler_mailhandler_mailbox_plugin() {
       # 'parent' => '',
     ),
   );
-//  $plugins['MailhandlerMailboxBase'] = array(
-//    'handler' => array(
-//      'path' => drupal_get_path('module', 'mailhandler') .'/plugins',
-//      'file' => 'MailhandlerMailboxBase.inc',
-//      'class' => 'MailhandlerMailboxBase',
-//      'parent' => 'MailhandlerMailbox',
-//    ),
-//  );
   return $plugins;
 }
 
@@ -464,3 +264,136 @@ function mailhandler_get_plugins($module, $type) {
   return $result;
 }
 
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function mailhandler_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Return a form for editing or creating an individual mailbox.
+ * 
+ * This design was somewhat influenced by the lack of late static bindings in
+ * PHP < 5.3
+ */
+//function mailhandler_mailbox_form($form_state, $op, $mail, $type = 'MailhandlerMailbox') {
+function mailhandler_mailbox_form(&$form, &$form_state, $type = 'MailhandlerMailbox') {  
+  $form['#theme'] = 'mailhandler_mailbox_form';
+  // Set some values which will be used below as well as in the submit handler.
+  // @TODO mangling the #form here could probably be cleaned up, avoided.
+  $type = $form_state['function args'][3] ? $form_state['function args'][3] : 'MailhandlerMailbox';
+  $mail = $form['info']['mail']['#value'];
+  $form['#mailhandler_mail'] = $form['info']['mail']['#value'];
+  $form['#mailhandler_class'] = $type;
+  $form['#mailhandler_op'] = $form_state['op'];
+
+  if ($form_state['op'] == 'edit') {
+    // Load the object and get its type
+    $mailbox = mailhandler_mailboxes_load($mail);
+    // Store the instantiated object on the form
+    $form['#mailhandler_mailbox'] = $mailbox;
+    $defaults = $mailbox->getSettings();
+    $defaults = $defaults[$type];
+  }
+  // Make sure the class is loaded, then call its form.
+  if ($class = mailhandler_plugin_load_class('mailhandler', $type, 'mailbox_plugin', 'handler')) {
+    $form += call_user_func_array(array($class, 'form'), array($form_state, $defaults));
+  }
+  // Hack to remove ctools forcing in 'name' identifier, whose validation does not allow '@ nor .'.
+  // This will get validated by the object itself.
+  $form['info']['mail']['#element_validate'] = NULL;
+  // More accurate language on the ctools-provided name/mail field.
+  $form['info']['mail']['#title'] = t('E-mail address');
+  $form['info']['mail']['#description'] = t('The e-mail address to which users should send their submissions.');
+  
+  // TODO: else, fail gracefully.
+  return $form;
+}
+
+/**
+ * Call validate() on the mailbox object.
+ */
+function mailhandler_mailbox_form_validate($form, &$form_state) {
+  if ($class = mailhandler_plugin_load_class('mailhandler', $form['#mailhandler_class'], 'mailbox_plugin', 'handler')) {
+    call_user_func_array(array($class, 'validate'), array($form, &$form_state));
+  }
+}
+
+/**
+ * Prepare values for saving by ctools export UI.  Pushing the data to the database is handled by ctools Export UI.
+ */
+function mailhandler_mailbox_form_submit($form, &$form_state) {  
+  // Export UI requires moving values into $form_state['item'] in preparation for storage.
+  $form_state['item']->mail = $form_state['values']['mail'];
+  // Only affect the settings key which pertains to the mailbox Type currently being edited.
+  if ($form['#mailhandler_mailbox'] && $current = db_result(db_query("SELECT settings FROM {mailhandler} WHERE mail = '%s'", $form_state['values']['mail']))) {
+    $current = unserialize($current);
+    $current[$form['#mailhandler_class']] = $form_state['values'];
+    $form_state['item']->settings = $current;
+  }
+  else {
+    // Adding a new record.  Set the mailbox_type
+    $form_state['item']->mailbox_type = 'MailhandlerMailbox';
+    $form_state['item']->settings[$form['#mailhandler_class']] = $form_state['values'];
+  }
+}
+
+/**
+ * Theme function for theme('mailhandler_mailbox_form')
+ */
+function theme_mailhandler_mailbox_form($form) {
+  drupal_add_css(drupal_get_path('module', 'mailhandler') .'/mailhandler.css');
+  $output = '<div class="mailhandler-settings clear-block">';
+  $output .= '<div class="left-bar">';
+  $plugins = mailhandler_get_plugins('mailhandler', 'mailbox_plugin');
+  foreach ($plugins as $plugin) {
+    $object = FALSE;
+    $object = mailhandler_plugin_load_class('mailhandler', $plugin['name'], 'mailbox_plugin', 'handler');
+    $info = $object->getInfo();
+    $output .= '<div class="mailhandler-settings-container">';
+    $output .= '<h4 class="mailhandler-settings-container-title">';
+    $output .= t($info['title']);
+    $output .= '</h4>';
+    $output .= '<div class="mailhandler-settings-container-body '.$zebra.'">';
+    $output .= '<div class="mailhandler-settings-desc">';
+    $output .= t($info['description']);
+    $output .= '<div class="mailhandler-settings-container-operations">';
+    $output .= l(t('Edit'), 'admin/content/mailhandler/list/'.$form['#mailhandler_mail'].'/edit/'.$plugin['name']);
+    if ($form['#mailhandler_op'] == 'edit') {
+      if ($plugin['name'] != $form['#mailhandler_mailbox']->mailbox_type) {
+        $output .= l(t('Set active'), 'admin/content/mailhandler/toggle/'.$form['#mailhandler_mail'].'/'.$plugin['name'] .'/'.$info['title'], array('query' => drupal_get_destination()));
+      }
+      else {
+        $output .= t('%active', array('%active' => 'Active'));
+      }
+    }
+    $output .= '</div></div></div></div>';
+  }
+  $output .= '</div>';
+  $output .= '<div class="main-bar">';
+  $output .= drupal_render($form);
+  $output .= '</div';
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Toggles the active mailbox type for a mailbox.
+ * 
+ * @param $mail
+ *   The mail identifier
+ * @param $type
+ *   The mailbox Type to toggle as active
+ * @param $title
+ *   The title of the mailbox Type.
+ */
+function mailhandler_mailbox_toggle_type($mail, $type, $title) {
+  if ($mailbox = db_fetch_object(db_query("SELECT * FROM {mailhandler} WHERE mail = '%s'", $mail))) {
+    db_query("UPDATE {mailhandler} SET mailbox_type = '%s' WHERE mail = '%s'", $type, $mail);
+    drupal_set_message(t('%type is now the active mailbox type.', array('%type' => $title)));
+    drupal_goto(drupal_get_destination());
+  }
+}
