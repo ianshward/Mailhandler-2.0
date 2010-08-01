@@ -30,7 +30,6 @@ function mailhandler_menu() {
     'page callback' => 'mailhandler_mailbox_toggle_type',
     'access arguments' => array('administer mailhandler'),
     'type' => MENU_CALLBACK,
-    //'file' => 'mailhandler.admin.inc',
   );
   return $items;
 }
