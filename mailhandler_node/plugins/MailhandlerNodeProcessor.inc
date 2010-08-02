@@ -15,6 +15,24 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       if (is_array($commandplugin) && !empty($commandplugin)) {
         $this->commands($item, $node);
       }
+      // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
+      if (!empty($item['header']->references)) {
+        // we want the final element in references header, watching out for white space
+        $threading = substr(strrchr($item['header']->references, '<'), 0);
+      }
+      else if (!empty($item['header']->in_reply_to)) {
+        $threading = str_replace(strstr($item['header']->in_reply_to, '>'), '>', $item['header']->in_reply_to); // Some MUAs send more info in that header.
+      }
+      if (isset($threading) && $threading = rtrim(ltrim($threading, '<'), '>')) { //strip angle brackets
+        if ($threading) $node->threading = $threading;
+        parse_str($threading, $tmp);
+        if ($tmp['host']) {
+          $tmp['host'] = ltrim($tmp['host'], '@'); // strip unnecessary @ from 'host' element
+        }
+        foreach ($tmp as $key => $value) {
+          $node->$key = $value;
+        }
+      }
       // Handle revision information now that the final 'type' is known
       if ($node->nid && $node->type != 'comment') {
         $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
@@ -22,6 +40,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
           $node->revision = $node->vid = $vid;
         }
       }
+      // Authenticate the message.
       $this->authenticate($item, $node);
       // Prepare the object only after we know the final node type.
       static $included;
@@ -232,7 +251,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
    */
   protected static function loadMappers() {
     static $loaded = FALSE;
-
     if (!$loaded) {
       $path = drupal_get_path('module', 'feeds') .'/mappers';
       $files = drupal_system_listing('.*\.inc$', $path, 'name', 0);
@@ -354,33 +372,6 @@ function _mailhandler_node_processor_target_created($node, $target, $value) {
 
 function _mailhandler_node_processor_target_teaser($node, $target, $value) {
   $node->$target = node_teaser($node->body);
-}
-
-// @TODO This should probably just be done in process() and not as a target callback
-function _mailhandler_node_processor_target_threading($node, $target, $value) {
-  //$message['threading'] = array('references' => $message['header']->references, 'in_reply_to' => $message['header']->in_reply_to); //$message;
-  // This message['threading'] is what i had in the parser
-  
-  // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
-  if (!empty($value['references'])) {
-    // we want the final element in references header, watching out for white space
-    $threading = substr(strrchr($value['references'], '<'), 0);
-  }
-  else if (!empty($value['in_reply_to'])) {
-    $threading = str_replace(strstr($value['in_reply_to'], '>'), '>', $value['in_reply_to']); // Some MUAs send more info in that header.
-  }
-  if (isset($threading) && $threading = rtrim(ltrim($threading, '<'), '>')) { //strip angle brackets
-    if ($threading) {
-      $node->threading = $threading;
-    }
-    parse_str($threading, $tmp);
-    if ($tmp['host']) {
-      $tmp['host'] = ltrim($tmp['host'], '@'); // strip unnecessary @ from 'host' element
-    }
-    foreach ($tmp as $key => $val) {
-      $node->$key = $val;
-    }
-  }
 }
 
 /**
