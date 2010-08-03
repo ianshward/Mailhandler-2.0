@@ -35,8 +35,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       }
       // Authenticate the message.
       $this->authenticate($item, $object);
-      // Invoke hook_mailhandler
-      _mailhandler_hooks('mailhandler', array($node, $item['header'], $item['mailbox']));
       // Submit the object.
       if ($object->type == 'comment') {
         if ($saved = $this->submitComment($object, $item['header'], $item['mailbox'], $item['origbody'])) {
@@ -76,9 +74,10 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitNode($node, $header, $mailbox, $origbody) {
     global $user;
-    //@TODO invoke hook_mailhandler here.
+    // Invoke hook_mailhandler
+    _mailhandler_hooks('mailhandler', array($node, $header, $mailbox));
     // Handle revision information now that the final 'type' is known
-    if ($node->nid && $node->type != 'comment') {
+    if ($node->nid) {
       $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
       if ($vid) {
         $node->revision = $node->vid = $vid;
@@ -141,7 +140,8 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitComment($comment, $header, $mailbox, $origbody) {
     global $user;
-    //@TODO invoke hook_mailhandler here.
+    // Invoke hook_mailhandler
+    _mailhandler_hooks('mailhandler', array($comment, $header, $mailbox));
     if (!$comment->subject) {
       $comment->subject = $comment->title;
     }
