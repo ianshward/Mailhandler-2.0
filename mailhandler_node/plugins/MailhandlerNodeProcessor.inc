@@ -8,12 +8,12 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function process(FeedsImportBatch $batch, FeedsSource $source) {
     $processed = $comments = $new_nodes = $updated_nodes = 0;
     while ($item = $batch->shiftItem()) {
-      $node = new stdClass();
-      $node->type = $this->config['content_type'];
-      $this->map($item, $node);
+      $object = new stdClass();
+      $object->type = $this->config['content_type'];
+      $this->map($item, $object);
       $commandplugin = $item['mailbox']->getSettings('commandplugin', $item['mailbox']);
       if (is_array($commandplugin) && !empty($commandplugin)) {
-        $this->commands($item, $node);
+        $this->commands($item, $object);
       }
       // Copy any name/value pairs from In-Reply-To or References e-mail headers to $node. Useful for maintaining threading info.
       if (!empty($item['header']->references)) {
@@ -24,61 +24,35 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
         $threading = str_replace(strstr($item['header']->in_reply_to, '>'), '>', $item['header']->in_reply_to); // Some MUAs send more info in that header.
       }
       if (isset($threading) && $threading = rtrim(ltrim($threading, '<'), '>')) { //strip angle brackets
-        if ($threading) $node->threading = $threading;
+        if ($threading) $object->threading = $threading;
         parse_str($threading, $tmp);
         if ($tmp['host']) {
           $tmp['host'] = ltrim($tmp['host'], '@'); // strip unnecessary @ from 'host' element
         }
         foreach ($tmp as $key => $value) {
-          $node->$key = $value;
-        }
-      }
-      // Handle revision information now that the final 'type' is known
-      if ($node->nid && $node->type != 'comment') {
-        $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
-        if ($vid) {
-          $node->revision = $node->vid = $vid;
+          $object->$key = $value;
         }
       }
       // Authenticate the message.
-      $this->authenticate($item, $node);
-      // Prepare the object only after we know the final node type.
-      static $included;
-      if (!$included) {
-        module_load_include('inc', 'node', 'node.pages');
-        $included = TRUE;
-      }
-      _mailhandler_node_object_prepare($node);
-      // Modules may override node elements before submitting. they do so by returning the node.
-      foreach (module_list() as $name) {
-        if (module_hook($name, 'mailhandler')) {
-          $function = $name .'_mailhandler';
-          if (!($node = $function($node, $item['header'], $item['mailbox']))) {
-            // Exit if a module has handled the submitted data.
-            break;
-          }
-        }
-      }
-      if ($node->type == 'comment') {
-        if ($object = $this->submitComment($node, $item['header'], $item['mailbox'], $item['origbody'])) {
+      $this->authenticate($item, $object);
+      // Invoke hook_mailhandler
+      _mailhandler_hooks('mailhandler', array($node, $item['header'], $item['mailbox']));
+      // Submit the object.
+      if ($object->type == 'comment') {
+        if ($saved = $this->submitComment($object, $item['header'], $item['mailbox'], $item['origbody'])) {
           $comments++;
         }
         $type = 'comment';
       }
       else {
-        if ($object = $this->submitNode($node, $item['header'], $item['mailbox'], $item['origbody'])) {
-          $node->is_new ? $new_nodes++ : $updated_nodes++;
+        if ($saved = $this->submitNode($object, $item['header'], $item['mailbox'], $item['origbody'])) {
+          $saved->is_new ? $new_nodes++ : $updated_nodes++;
         }
         $type = 'node';
       }
-      // Invoke a second hook for modules to operate on the newly created/edited node/comment.
-      foreach (module_list() as $name) {
-        if (module_hook($name, 'mailhandler_post_save')) {
-          $function = $name .'_mailhandler_post_save';
-          // Pass in the result from submit (which could be a cid, or a node object)
-          $function($object, $type);
-        }
-      }
+      // Invoke hook_mailhandler_post_save for modules to operate on the newly created/edited node/comment.
+      _mailhandler_hooks('mailhandler_post_save', array($saved, $type));
+
       $processed++;
       if ($processed >= variable_get('mailhandler_node_batch_size', MAILHANDLER_NODE_BATCH_SIZE)) {
         return (1.0 / ($batch->total + 1)) * ($comments + $new_nodes + $updated_nodes); // Add + 1 to make sure that result is not 1.0 = finished.
@@ -102,8 +76,23 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitNode($node, $header, $mailbox, $origbody) {
     global $user;
+    //@TODO invoke hook_mailhandler here.
+    // Handle revision information now that the final 'type' is known
+    if ($node->nid && $node->type != 'comment') {
+      $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
+      if ($vid) {
+        $node->revision = $node->vid = $vid;
+      }
+    }
+    // Prepare the object only after we know the final node type.
+    static $included;
+    if (!$included) {
+      module_load_include('inc', 'node', 'node.pages');
+      $included = TRUE;
+    }
+    _mailhandler_node_object_prepare($node);
     list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
-    // Reset the static cache 
+    // Reset the static cache
     form_set_error(NULL, '', TRUE);
     node_validate($node);
     if (!$error_messages = form_set_error()) {
@@ -150,23 +139,24 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
     return FALSE;
   }
 
-  protected function submitComment($node, $header, $mailbox, $origbody) {
+  protected function submitComment($comment, $header, $mailbox, $origbody) {
     global $user;
-    if (!$node->subject) {
-      $node->subject = $node->title;
+    //@TODO invoke hook_mailhandler here.
+    if (!$comment->subject) {
+      $comment->subject = $comment->title;
     }
     // 'comment' is the 'body' on comments.  Make it so.
-    $node->comment = $node->body;
+    $comment->comment = $comment->body;
     // Only do this if status is set in the first place so that we fall back on permission system.
     // This depends on status being properly handled by command processor
-    if (property_exists($node, 'status')) {
+    if (property_exists($comment, 'status')) {
       // In comment module, status of 1 means unpublished, status of 0 means published.
-      $node->status == 1 ? $node->status = 0 : $node->status = 1;
+      $comment->status == 1 ? $comment->status = 0 : $comment->status = 1;
     }
     // We want the comment to have the email time, not the current time
-    $node->timestamp = $node->created;
+    $comment->timestamp = $comment->created;
     // comment_save gets an array
-    $edit = (array)$node;
+    $edit = (array)$comment;
 
     // post the comment. if unable, send a failure email when so configured
     $cid = comment_save($edit);
@@ -174,7 +164,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       // $fromaddress really refers to the mail header which is authoritative for authentication
       list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
       $error_text = t('Sorry, your comment experienced an error and was not posted. Possible reasons are that you have insufficient permission to post comments or the node is no longer open for comments.');
-      $params = array('body' => $origbody, 'error_messages' => array(), 'error_text' => $error_text, 'from' => $fromaddress, 'header' => $header, 'node' => $node);
+      $params = array('body' => $origbody, 'error_messages' => array(), 'error_text' => $error_text, 'from' => $fromaddress, 'header' => $header, 'node' => $comment);
       drupal_mail('mailhandler', 'mailhandler_error_comment', $fromaddress, user_preferred_language($user), $params);
       watchdog('mailhandler', 'Comment submission failure: %subject.', array('%subject' => $edit['subject']), WATCHDOG_ERROR);
     }
@@ -268,12 +258,12 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   /*
    * Parse and apply commands.
    */
-  public function commands($item, &$node) {
+  public function commands($item, &$object) {
     if (($plugins = $item['mailbox']->getSettings('commandplugin', $item['mailbox'])) && is_array($plugins) && !empty($plugins)) {
       foreach ($plugins as $plugin) {
         if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'commands', 'handler')) {
-          $class->parse($item, &$node);
-          $class->process($item, &$node); 
+          $class->parse($item, &$object);
+          $class->process($item, &$object); 
         }
       }
     }
@@ -282,11 +272,11 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   /*
    * Authenticate the message.
    */
-  public function authenticate($item, &$node) {
+  public function authenticate($item, &$object) {
     // TODO: allow for multiple authenticate plugins to be weighted and implemented.
     if (($plugin = $item['mailbox']->getSettings('authenticateplugin', $item['mailbox']))) {
       if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'authenticate', 'handler')) {
-        $class->authenticate($item, &$node);
+        $class->authenticate($item, &$object);
       }
     }
   }
@@ -325,7 +315,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
  * Private mapping callback functions
  */
 
-function _mailhandler_node_processor_target_body($node, $target, $value) {
+function _mailhandler_node_processor_target_body($object, $target, $value) {
   $lines = explode("\n", $value);
   for ($i = 0; $i < count($lines); $i++) {
     $line = trim($lines[$i]);
@@ -344,34 +334,34 @@ function _mailhandler_node_processor_target_body($node, $target, $value) {
   // Idea to let user define what their sig separater is and use that based on who
   // the mail is from.  Again, don't have needed info in this scope.
   // To deal w/ scope issues, could stuff something onto $node->mailhandler.
-  $node->$target = $body;
+  $object->$target = $body;
 }
 
-function _mailhandler_node_processor_target_title($node, $target, $value) {
+function _mailhandler_node_processor_target_title($object, $target, $value) {
   $subjectarr = imap_mime_header_decode($value);
   if (empty($subjectarr)) {
-    $node->title = truncate_utf8(trim(decode_entities(strip_tags(check_markup($node->body)))), 29, TRUE);
+    $object->title = truncate_utf8(trim(decode_entities(strip_tags(check_markup($object->body)))), 29, TRUE);
   }
   else {
     for ($i = 0; $i < count($subjectarr); $i++) {
       if ($subjectarr[$i]->charset != 'default') {
-        $node->title = drupal_convert_to_utf8($subjectarr[$i]->text, $subjectarr[$i]->charset);
+        $object->title = drupal_convert_to_utf8($subjectarr[$i]->text, $subjectarr[$i]->charset);
       }
       else {
-        $node->title = $subjectarr[$i]->text;
+        $object->title = $subjectarr[$i]->text;
       }
     }
   }
 }
 
-function _mailhandler_node_processor_target_created($node, $target, $value) {
+function _mailhandler_node_processor_target_created($object, $target, $value) {
   $date = strtotime($value);
-  $node->$target = $date;
-  $node->changed = $date;
+  $object->$target = $date;
+  $object->changed = $date;
 }
 
-function _mailhandler_node_processor_target_teaser($node, $target, $value) {
-  $node->$target = node_teaser($node->body);
+function _mailhandler_node_processor_target_teaser($object, $target, $value) {
+  $object->$target = node_teaser($object->body);
 }
 
 /**
@@ -405,3 +395,21 @@ function _mailhandler_node_object_prepare(&$node) {
   node_invoke_nodeapi($node, 'prepare');
 }
 
+/**
+ * 
+ * @param $hook
+ *   The hook name to call.
+ * @param $args
+ *   Arguments to pass to the hook.
+ */
+function _mailhandler_hooks($hook, $args = array()) {
+  foreach (module_list() as $name) {
+    if (module_hook($name, $hook)) {
+      // Nothing is passed by reference, so this works.
+      if (!$object = user_call_func_array($name . '_' . $hook, $args)) {
+        // Exit if a module has handled the submitted data.
+        break;
+      }
+    }
+  }
+}

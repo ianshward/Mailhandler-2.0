@@ -10,6 +10,6 @@ abstract class MailhandlerAuthenticate {
    * @param $node
    *   A node object.  May 
    */
-  abstract public function authenticate($item, &$node);
+  abstract public function authenticate($item, &$object);
   
 }
