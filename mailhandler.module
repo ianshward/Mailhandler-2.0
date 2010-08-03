@@ -83,7 +83,7 @@ function mailhandler_get_fromaddress($header, $mailbox) {
  * Retrieve user information from his email address.
  */
 function mailhandler_user_load($mail, $pass, $mailbox) {
-  if ($mailbox['security'] == 1) {
+  if ($mailbox->security == 1) {
     if (!$account = user_load(array('mail' => $mail, 'pass' => $pass))) {
       watchdog('mailhandler', 'Wrong password used in message commands for %address', array('%address' => $mail), WATCHDOG_NOTICE);
     }

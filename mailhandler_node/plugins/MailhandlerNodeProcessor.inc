@@ -168,7 +168,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       drupal_mail('mailhandler', 'mailhandler_error_comment', $fromaddress, user_preferred_language($user), $params);
       watchdog('mailhandler', 'Comment submission failure: %subject.', array('%subject' => $edit['subject']), WATCHDOG_ERROR);
     }
-
     return $cid;
   }
   
@@ -261,7 +260,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function commands($item, &$object) {
     if (($plugins = $item['mailbox']->getSettings('commandplugin', $item['mailbox'])) && is_array($plugins) && !empty($plugins)) {
       foreach ($plugins as $plugin) {
-        if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'commands', 'handler')) {
+        if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'commands_plugin', 'handler')) {
           $class->parse($item, &$object);
           $class->process($item, &$object); 
         }
@@ -275,7 +274,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   public function authenticate($item, &$object) {
     // TODO: allow for multiple authenticate plugins to be weighted and implemented.
     if (($plugin = $item['mailbox']->getSettings('authenticateplugin', $item['mailbox']))) {
-      if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'authenticate', 'handler')) {
+      if ($class = mailhandler_plugin_load_class('mailhandler_node', $plugin, 'authenticate_plugin', 'handler')) {
         $class->authenticate($item, &$object);
       }
     }

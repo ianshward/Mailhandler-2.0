@@ -1,6 +1,6 @@
 <?php
 
-class MailhandlerCommandsDefault extends MailhandlerCommands {
+class MailhandlerNodeCommandsDefault extends MailhandlerNodeCommands {
   //protected $commands = NULL;
 
   /**

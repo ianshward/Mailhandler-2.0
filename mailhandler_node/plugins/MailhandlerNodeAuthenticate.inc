@@ -1,6 +1,6 @@
 <?php
 
-abstract class MailhandlerAuthenticate {
+abstract class MailhandlerNodeAuthenticate {
   
   /**
    * Authenticates an incoming message.

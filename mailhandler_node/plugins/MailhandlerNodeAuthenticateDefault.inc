@@ -1,10 +1,10 @@
 <?php
   
-class MailhandlerAuthenticateDefault extends MailhandlerAuthenticate {
+class MailhandlerNodeAuthenticateDefault extends MailhandlerNodeAuthenticate {
   
   public function authenticate($item, &$object) {
     list($fromaddress, $fromname) = mailhandler_get_fromaddress($item['header'], $item['mailbox']);
-    if ($from_user = mailhandler_user_load($fromaddress, $object->pass, $mailbox)) {
+    if ($from_user = mailhandler_user_load($fromaddress, $object->pass, $item['mailbox'])) {
       $object->uid = $from_user->uid;
       $object->name = $from_user->name;
     }

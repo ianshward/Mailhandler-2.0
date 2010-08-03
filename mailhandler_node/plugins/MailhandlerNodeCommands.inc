@@ -1,6 +1,6 @@
 <?php
 
-abstract class MailhandlerCommands {
+abstract class MailhandlerNodeCommands {
   
   protected $commands = NULL;
   
@@ -9,14 +9,14 @@ abstract class MailhandlerCommands {
    * 
    * @param $item
    *   Array which contains mailbox, message header, and body information.
-   * @param $node
+   * @param $object
    *   Node object of the node being built for submission.
    */
-  public function parse($item, &$node) {
+  public function parse($item, &$object) {
     $body = $item['body'];
     // Prepend the default commands.  User-added commands will override the default commands.
-    if ($item['mailbox']['commands']) {
-      $body = trim($item['mailbox']['commands']) ."\n". $body;
+    if ($item['mailbox']->commands) {
+      $body = trim($item['mailbox']->commands) ."\n". $body;
     }
     $commands = array(); $endcommands = NULL;
     // Collect the commands and locate signature
@@ -41,9 +41,9 @@ abstract class MailhandlerCommands {
    * 
    * @param $item
    *   Array which contains mailbox, message header, and body information.
-   * @param $node
+   * @param $object
    *   Node object of the node being built for submission.
    */
-  abstract public function process($item, &$node);
+  abstract public function process($item, &$object);
   
 }
