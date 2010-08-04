@@ -33,6 +33,8 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
           $object->$key = $value;
         }
       }
+      // Put mimeparts on object
+      $object->mimeparts = $item['mimeparts'];
       // Authenticate the message.
       $this->authenticate($item, $object);
       // Submit the object.
@@ -74,8 +76,6 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
 
   protected function submitNode($node, $header, $mailbox, $origbody) {
     global $user;
-    // Invoke hook_mailhandler
-    _mailhandler_hooks('mailhandler', array($node, $header, $mailbox));
     // Handle revision information now that the final 'type' is known
     if ($node->nid) {
       $vid = db_result(db_query('SELECT n.vid FROM {node} n WHERE n.nid = %d', $node->nid));
@@ -90,6 +90,8 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
       $included = TRUE;
     }
     _mailhandler_node_object_prepare($node);
+    // Invoke hook_mailhandler
+    $node = _mailhandler_hooks('mailhandler', array($node, $header, $mailbox));
     list($fromaddress, $fromname) = mailhandler_get_fromaddress($header, $mailbox);
     // Reset the static cache
     form_set_error(NULL, '', TRUE);
@@ -141,7 +143,7 @@ class MailhandlerNodeProcessor extends FeedsProcessor {
   protected function submitComment($comment, $header, $mailbox, $origbody) {
     global $user;
     // Invoke hook_mailhandler
-    _mailhandler_hooks('mailhandler', array($comment, $header, $mailbox));
+    $comment = _mailhandler_hooks('mailhandler', array($comment, $header, $mailbox));
     if (!$comment->subject) {
       $comment->subject = $comment->title;
     }
@@ -405,10 +407,11 @@ function _mailhandler_hooks($hook, $args = array()) {
   foreach (module_list() as $name) {
     if (module_hook($name, $hook)) {
       // Nothing is passed by reference, so this works.
-      if (!$object = user_call_func_array($name . '_' . $hook, $args)) {
+      if (!$object = call_user_func_array($name . '_' . $hook, $args)) {
         // Exit if a module has handled the submitted data.
         break;
       }
     }
   }
+  return $object;
 }

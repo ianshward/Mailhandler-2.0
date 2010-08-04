@@ -2,10 +2,6 @@
 
 class MailhandlerNodeMailbox extends MailhandlerMailbox {
   
-//  function __construct() {
-//    parent::__construct();
-//  }
-  
   private function setInfo() {
     return array(
       'title' => 'Node Mailbox',
@@ -79,7 +75,7 @@ class MailhandlerNodeMailbox extends MailhandlerMailbox {
   }
   
   function validate($form, &$form_state) {
-    
+    // @TODO - validation.
   }
 
 }
