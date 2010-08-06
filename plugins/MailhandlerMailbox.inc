@@ -23,7 +23,7 @@ class MailhandlerMailbox {
    */
   function __construct($mailbox = FALSE) {
     // TODO not sure how PHP 5.3 will treat get_class where I'm calling the 
-    // class name explicitly.
+    // class name below explicitly.
     
     // Fetch settings from database, propagate object.
     if ($mailbox) {
@@ -165,9 +165,10 @@ class MailhandlerMailbox {
       form_set_error('mail', $error);
     }
     // Check whether email address already exists
-    if ($result = db_result(db_query("SELECT 1 FROM {mailhandler} WHERE mail = '%s'", $form_state['values']['mail']))) {
-      // @TODO is overzealous on the 'edit' op
-      //form_set_error('mail', t('Mailbox %mail already exists.  Please use a unique mailbox name.', array('%mail' => $form_state['values']['mail'])));
+    if ($form_state['op'] === 'add') {
+      if ($result = db_result(db_query("SELECT 1 FROM {mailhandler} WHERE mail = '%s'", $form_state['values']['mail']))) {
+        form_set_error('mail', t('Mailbox %mail already exists.  Please use a unique mailbox name.', array('%mail' => $form_state['values']['mail'])));
+      }
     }
     // Check whether mailto is valid.
     if ($form_state['values']['mailto'] && ($error = user_validate_mail($form_state['values']['mailto']))) {
@@ -198,11 +199,13 @@ class MailhandlerMailbox {
 //      form_set_error('mailhandler');
 //    }
 
-    // If POP3 mailbox is chosen, messages must be deleted after processing.
+    // If POP3 mailbox is chosen, messages should be deleted after processing.  Do not set an actual error
+    // because this is helpful for testing purposes.
     if ($form_state['values']['imap'] == 0 && $form_state['values']['delete_after_read'] == 0) {
-      // @TODO put back. handy for testing.
-      //form_set_error('delete_after_read', t('You must check off "Delete messages after they are processed" when using a POP3 mailbox.'));
+      drupal_set_message(t('Unless you check off "Delete messages after they are processed" when using a POP3 mailbox, old emails will be re-imported each
+      time the mailbox is processed.'), 'warning');
     }
+    
   }
   
 }

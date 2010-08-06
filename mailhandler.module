@@ -328,7 +328,8 @@ function mailhandler_mailbox_form_validate($form, &$form_state) {
 /**
  * Prepare values for saving by ctools export UI.  Pushing the data to the database is handled by ctools Export UI.
  */
-function mailhandler_mailbox_form_submit($form, &$form_state) {  
+function mailhandler_mailbox_form_submit($form, &$form_state) {
+  //@TODO avoid storing the form information.  
   // Export UI requires moving values into $form_state['item'] in preparation for storage.
   $form_state['item']->mail = $form_state['values']['mail'];
   // Only affect the settings key which pertains to the mailbox Type currently being edited.
